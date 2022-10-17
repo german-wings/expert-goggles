@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MTConnectStreams xmlns:m="urn:mtconnect.org:MTConnectStreams:1.2" xmlns="urn:mtconnect.org:MTConnectStreams:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mtconnect.org:MTConnectStreams:1.2 http://www.mtconnect.org/schemas/MTConnectStreams_1.2.xsd">
+	<Header creationTime="2022-10-17T09:50:40.685Z" sender="NGC" instanceId="1665989779" version="1.2.0.1.2" bufferSize="333" firstSequence="22424" lastSequence="22523" nextSequence="22524"/>
+	<Streams>
+		<DeviceStream name="VF-4-I" uuid="000">
+			<ComponentStream component="Pathposition" componentId="pathposition" name="PathPosition">
+				<Samples>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:00.025Z" sequence="22424" name="XYZActual" subType="ACTUAL">-259.290081515503,-196.40000285715385,-474.2000033408295</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:01.025Z" sequence="22426" name="XYZActual" subType="ACTUAL">-258.8900815584991,-196.40000285715385,-474.2000033408295</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:05.025Z" sequence="22429" name="XYZActual" subType="ACTUAL">-258.8900815584991,-196.40000285715385,-477.5731656997287</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:06.025Z" sequence="22430" name="XYZActual" subType="ACTUAL">-258.8900815584991,-196.40000285715385,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:08.025Z" sequence="22431" name="XYZActual" subType="ACTUAL">-258.8900815584991,-195.04635199861667,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:09.025Z" sequence="22432" name="XYZActual" subType="ACTUAL">-258.8900815584991,-192.54622895808717,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:10.025Z" sequence="22433" name="XYZActual" subType="ACTUAL">-258.8900815584991,-190.50573807418456,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:11.076Z" sequence="22434" name="XYZActual" subType="ACTUAL">-258.8900815584991,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:14.077Z" sequence="22437" name="XYZActual" subType="ACTUAL">-258.79008159771075,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:15.077Z" sequence="22439" name="XYZActual" subType="ACTUAL">-258.6900815962225,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:16.077Z" sequence="22441" name="XYZActual" subType="ACTUAL">-258.5900815947324,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:17.077Z" sequence="22443" name="XYZActual" subType="ACTUAL">-258.4900815932423,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:18.080Z" sequence="22445" name="XYZActual" subType="ACTUAL">-258.3900815917521,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:19.081Z" sequence="22447" name="XYZActual" subType="ACTUAL">-258.1904294904262,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:20.080Z" sequence="22449" name="XYZActual" subType="ACTUAL">-258.19008158877193,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:21.081Z" sequence="22451" name="XYZActual" subType="ACTUAL">-258.0900815872818,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:22.081Z" sequence="22453" name="XYZActual" subType="ACTUAL">-257.99008158579164,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:24.082Z" sequence="22456" name="XYZActual" subType="ACTUAL">-257.8900815843016,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:25.083Z" sequence="22458" name="XYZActual" subType="ACTUAL">-257.79008158281147,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:27.083Z" sequence="22461" name="XYZActual" subType="ACTUAL">-257.8900740111743,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:29.083Z" sequence="22464" name="XYZActual" subType="ACTUAL">-257.99007401232103,-190.0000102364009,-477.60000345297306</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:38.082Z" sequence="22468" name="XYZActual" subType="ACTUAL">-257.99007401232103,-190.0000102364009,-472.184315437588</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:39.083Z" sequence="22469" name="XYZActual" subType="ACTUAL">-257.99007401232103,-190.0000102364009,-467.10001062390296</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:41.083Z" sequence="22470" name="XYZActual" subType="ACTUAL">-241.12450602607413,-190.0000102364009,-467.10001062390296</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:42.083Z" sequence="22471" name="XYZActual" subType="ACTUAL">-193.55326817351812,-190.0000102364009,-467.10001062390296</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:43.083Z" sequence="22472" name="XYZActual" subType="ACTUAL">-180.79118705411423,-190.0000102364009,-467.10001062390296</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:44.083Z" sequence="22473" name="XYZActual" subType="ACTUAL">-180.7900804609512,-190.0000102364009,-467.10001062390296</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:45.088Z" sequence="22474" name="XYZActual" subType="ACTUAL">-180.7900804609512,-190.0000102364009,-474.82487382109247</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:46.088Z" sequence="22475" name="XYZActual" subType="ACTUAL">-180.7900804609512,-190.0000102364009,-478.4000034449999</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:47.088Z" sequence="22476" name="XYZActual" subType="ACTUAL">-180.7900804609512,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:50.090Z" sequence="22477" name="XYZActual" subType="ACTUAL">-184.39007067896608,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:51.090Z" sequence="22479" name="XYZActual" subType="ACTUAL">-184.47163300907124,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:52.090Z" sequence="22481" name="XYZActual" subType="ACTUAL">-185.34085268814175,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:53.091Z" sequence="22483" name="XYZActual" subType="ACTUAL">-185.69003946814902,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:54.090Z" sequence="22485" name="XYZActual" subType="ACTUAL">-185.99004377358295,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:55.090Z" sequence="22487" name="XYZActual" subType="ACTUAL">-186.19007294246302,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:56.090Z" sequence="22489" name="XYZActual" subType="ACTUAL">-186.44834909918035,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:57.090Z" sequence="22491" name="XYZActual" subType="ACTUAL">-186.59007294837812,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:58.090Z" sequence="22493" name="XYZActual" subType="ACTUAL">-186.69006744056767,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:42:59.091Z" sequence="22495" name="XYZActual" subType="ACTUAL">-186.69007294986824,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:00.091Z" sequence="22497" name="XYZActual" subType="ACTUAL">-186.79007295135835,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:01.092Z" sequence="22499" name="XYZActual" subType="ACTUAL">-186.89007295284847,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:02.093Z" sequence="22501" name="XYZActual" subType="ACTUAL">-186.9900729543386,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:06.092Z" sequence="22506" name="XYZActual" subType="ACTUAL">-187.0900729558287,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:08.093Z" sequence="22509" name="XYZActual" subType="ACTUAL">-186.99008052746586,-190.0000102364009,-478.60000338653515</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:16.093Z" sequence="22514" name="XYZActual" subType="ACTUAL">-186.99008052746586,-190.0000102364009,-472.8984489481181</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:17.093Z" sequence="22515" name="XYZActual" subType="ACTUAL">-186.99008052746586,-190.0000102364009,-465.3000167722681</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:18.093Z" sequence="22516" name="XYZActual" subType="ACTUAL">-186.99008052746586,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:22.095Z" sequence="22517" name="XYZActual" subType="ACTUAL">-194.51738114196468,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:23.094Z" sequence="22518" name="XYZActual" subType="ACTUAL">-210.6467861130011,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:24.094Z" sequence="22519" name="XYZActual" subType="ACTUAL">-216.7898808924919,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:25.094Z" sequence="22520" name="XYZActual" subType="ACTUAL">-217.3771099650366,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:26.094Z" sequence="22521" name="XYZActual" subType="ACTUAL">-223.279488947189,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:27.094Z" sequence="22522" name="XYZActual" subType="ACTUAL">-223.24791551026993,-190.0000102364009,-465.30001062711057</PathPosition>
+					<PathPosition dataItemId="xyzact" timestamp="2022-10-17T09:43:28.094Z" sequence="22523" name="XYZActual" subType="ACTUAL">-222.59008105909152,-190.0000102364009,-465.30001062711057</PathPosition>
+				</Samples>
+			</ComponentStream>
+			<ComponentStream component="Controller" componentId="cont1" name="MachineController">
+				<Samples>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:01.025Z" sequence="22425" name="SpindleSpeed" subType="ACTUAL">12.41455078125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:02.025Z" sequence="22427" name="SpindleSpeed" subType="ACTUAL">0.18310546875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:03.025Z" sequence="22428" name="SpindleSpeed" subType="ACTUAL">0.0</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:13.077Z" sequence="22435" name="SpindleSpeed" subType="ACTUAL">0.0091552734375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:14.077Z" sequence="22436" name="SpindleSpeed" subType="ACTUAL">8.0474853515625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:15.077Z" sequence="22438" name="SpindleSpeed" subType="ACTUAL">11.993408203125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:16.077Z" sequence="22440" name="SpindleSpeed" subType="ACTUAL">15.472412109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:17.077Z" sequence="22442" name="SpindleSpeed" subType="ACTUAL">9.8052978515625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:18.080Z" sequence="22444" name="SpindleSpeed" subType="ACTUAL">17.138671875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:19.080Z" sequence="22446" name="SpindleSpeed" subType="ACTUAL">15.6097412109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:20.080Z" sequence="22448" name="SpindleSpeed" subType="ACTUAL">13.5589599609375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:21.081Z" sequence="22450" name="SpindleSpeed" subType="ACTUAL">15.142822265625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:22.081Z" sequence="22452" name="SpindleSpeed" subType="ACTUAL">13.29345703125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:23.082Z" sequence="22454" name="SpindleSpeed" subType="ACTUAL">12.4053955078125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:24.082Z" sequence="22455" name="SpindleSpeed" subType="ACTUAL">14.5477294921875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:25.082Z" sequence="22457" name="SpindleSpeed" subType="ACTUAL">0.018310546875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:26.082Z" sequence="22459" name="SpindleSpeed" subType="ACTUAL">0.0</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:27.082Z" sequence="22460" name="SpindleSpeed" subType="ACTUAL">0.0732421875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:28.082Z" sequence="22462" name="SpindleSpeed" subType="ACTUAL">0.0091552734375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:29.082Z" sequence="22463" name="SpindleSpeed" subType="ACTUAL">5.2825927734375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:30.082Z" sequence="22465" name="SpindleSpeed" subType="ACTUAL">14.739990234375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:31.082Z" sequence="22466" name="SpindleSpeed" subType="ACTUAL">0.0091552734375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:32.082Z" sequence="22467" name="SpindleSpeed" subType="ACTUAL">0.0</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:51.090Z" sequence="22478" name="SpindleSpeed" subType="ACTUAL">0.3753662109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:52.090Z" sequence="22480" name="SpindleSpeed" subType="ACTUAL">10.491943359375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:53.090Z" sequence="22482" name="SpindleSpeed" subType="ACTUAL">14.2913818359375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:54.090Z" sequence="22484" name="SpindleSpeed" subType="ACTUAL">15.6097412109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:55.090Z" sequence="22486" name="SpindleSpeed" subType="ACTUAL">13.1744384765625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:56.090Z" sequence="22488" name="SpindleSpeed" subType="ACTUAL">18.64013671875</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:57.090Z" sequence="22490" name="SpindleSpeed" subType="ACTUAL">15.728759765625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:58.090Z" sequence="22492" name="SpindleSpeed" subType="ACTUAL">13.037109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:42:59.091Z" sequence="22494" name="SpindleSpeed" subType="ACTUAL">13.714599609375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:00.091Z" sequence="22496" name="SpindleSpeed" subType="ACTUAL">16.021728515625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:01.092Z" sequence="22498" name="SpindleSpeed" subType="ACTUAL">15.289306640625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:02.092Z" sequence="22500" name="SpindleSpeed" subType="ACTUAL">10.968017578125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:03.092Z" sequence="22502" name="SpindleSpeed" subType="ACTUAL">4.39453125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:04.092Z" sequence="22503" name="SpindleSpeed" subType="ACTUAL">0.87890625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:05.092Z" sequence="22504" name="SpindleSpeed" subType="ACTUAL">3.3050537109375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:06.092Z" sequence="22505" name="SpindleSpeed" subType="ACTUAL">0.054931640625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:07.093Z" sequence="22507" name="SpindleSpeed" subType="ACTUAL">0.0</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:08.093Z" sequence="22508" name="SpindleSpeed" subType="ACTUAL">4.8614501953125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:09.093Z" sequence="22510" name="SpindleSpeed" subType="ACTUAL">0.640869140625</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:10.093Z" sequence="22511" name="SpindleSpeed" subType="ACTUAL">3.55224609375</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:11.093Z" sequence="22512" name="SpindleSpeed" subType="ACTUAL">2.178955078125</SpindleSpeed>
+					<SpindleSpeed dataItemId="sspeed" timestamp="2022-10-17T09:43:12.093Z" sequence="22513" name="SpindleSpeed" subType="ACTUAL">0.0</SpindleSpeed>
+				</Samples>
+			</ComponentStream>
+		</DeviceStream>
+		</Streams>
+</MTConnectStreams>
