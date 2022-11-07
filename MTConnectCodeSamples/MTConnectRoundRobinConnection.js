@@ -63,10 +63,19 @@ async function initiateMTConnectSequence() {
 
             //check if currentRequest is done ?
             if (device.currentDone === true) {
+                //check if nextsequence is one less then last sequence if so set last sequence as this sequence
+                device.nextSequence = (device.nextSequence-1)===device.lastSequence?device.lastSequence:device.nextSequence
+                currentRequestURL = `${device.endpoint}current?at=${device.nextSequence}`
+            }
 
+            else {
+                currentRequestURL = `${device.endpoint}current`
             }
 
             let currentResponse = await axios.get(`${currentRequestURL}`, { headers: { 'Accept': 'text/xml' } })
+            
+            console.log(currentResponse.data)
+            
             let dom = new JSDOM(currentResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
@@ -76,24 +85,25 @@ async function initiateMTConnectSequence() {
                 console.log('Instance ID Mismatch')
                 continue
             }
-            else {
-                //continue getting new values here
-                let firstSequence = dom.querySelector('[firstSequence]').getAttribute('firstSequence')
-                let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
-                let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
+            //continue getting new values here
+            let firstSequence = dom.querySelector('[firstSequence]').getAttribute('firstSequence')
+            let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
+            let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
-                //populate state related keys
-                device.firstSequence = firstSequence
-                device.nextSequence = nextSequence
-                device.lastSequence = lastSequence
+            //populate state related keys
+            device.firstSequence = firstSequence
+            device.nextSequence = nextSequence
+            device.lastSequence = lastSequence
 
-                //sort all the sequences in ascending order
-                let sequences = dom.querySelectorAll('[sequence]')
-                let list_of_sequences = []
-                sequences.forEach((item) => list_of_sequences.push(item))
-                list_of_sequences.sort((a, b) => parseInt(a.getAttribute('sequence')) - parseInt(b.getAttribute('sequence')))
+            //sort all the sequences in ascending order
+            let sequences = dom.querySelectorAll('[sequence]')
+            let list_of_sequences = []
+            sequences.forEach((item) => list_of_sequences.push(item))
+            list_of_sequences.sort((a, b) => parseInt(a.getAttribute('sequence')) - parseInt(b.getAttribute('sequence')))
 
-            }
+
+            //last before closing set currentRequest done...
+            device.currentDone = true
         }
     }
 
