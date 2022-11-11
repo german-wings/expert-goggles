@@ -48,6 +48,7 @@ async function initiateMTConnectSequence() {
             }
             device.serialNumber = serialNumber
             device.instanceID = instanceID
+            device.currentDone = false
             //mark the device state as true
             device.probeDone = true
         }
@@ -56,26 +57,13 @@ async function initiateMTConnectSequence() {
         //check if the probeIsDone
         //check if instanceID matches
         //populate initial values
+        if (device.probeDone === true && device.instanceID != null && device.currentDone !== true) {
 
-        if (device.probeDone === true && device.instanceID != null) {
+            let currentRequestURL = `${device.endpoint}current`
 
-            let currentRequestURL = null
-
-            //check if currentRequest is done ?
-            if (device.currentDone === true) {
-                //check if nextsequence is one less then last sequence if so set last sequence as this sequence
-                device.nextSequence = (device.nextSequence-1)===device.lastSequence?device.lastSequence:device.nextSequence
-                currentRequestURL = `${device.endpoint}current?at=${device.nextSequence}`
-            }
-
-            else {
-                currentRequestURL = `${device.endpoint}current`
-            }
 
             let currentResponse = await axios.get(`${currentRequestURL}`, { headers: { 'Accept': 'text/xml' } })
-            
-            console.log(currentResponse.data)
-            
+
             let dom = new JSDOM(currentResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
@@ -91,9 +79,9 @@ async function initiateMTConnectSequence() {
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
             //populate state related keys
-            device.firstSequence = firstSequence
-            device.nextSequence = nextSequence
-            device.lastSequence = lastSequence
+            device.firstSequence = parseInt(firstSequence)
+            device.nextSequence = parseInt(nextSequence)
+            device.lastSequence = parseInt(lastSequence)
 
             //sort all the sequences in ascending order
             let sequences = dom.querySelectorAll('[sequence]')
@@ -101,9 +89,16 @@ async function initiateMTConnectSequence() {
             sequences.forEach((item) => list_of_sequences.push(item))
             list_of_sequences.sort((a, b) => parseInt(a.getAttribute('sequence')) - parseInt(b.getAttribute('sequence')))
 
-
             //last before closing set currentRequest done...
             device.currentDone = true
+        }
+
+        //stage change to sample request
+        //record streams of samples and update nextSequence automatically
+        //if instance ID changes set probeDone to false
+        
+        if(device.currentDone === true){
+            
         }
     }
 
