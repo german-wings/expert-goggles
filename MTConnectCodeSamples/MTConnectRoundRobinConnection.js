@@ -11,7 +11,8 @@ const device_2 = {
     'keyOfInterest': ['Program', 'ProgramComment', 'ControllerMode'],
 }
 
-const mtconnect_devices = [device_1, device_2]
+//const mtconnect_devices = [device_1, device_2]
+const mtconnect_devices = [device_1]
 const localDeviceStateList = []
 
 
@@ -33,7 +34,6 @@ lastSequence
 async function initiateMTConnectSequence() {
 
     for (let counter = 0; counter < mtconnect_devices.length; counter += 1) {
-        console.log('--------------------------------------------------')
         //check if the device has a probeRequest conducted?
         let device = mtconnect_devices[counter]
         if (device.probeDone == undefined || device.probeDone == false) {
@@ -48,6 +48,7 @@ async function initiateMTConnectSequence() {
             }
             device.serialNumber = serialNumber
             device.instanceID = instanceID
+            //set the currentDone to false
             device.currentDone = false
             //mark the device state as true
             device.probeDone = true
@@ -60,10 +61,7 @@ async function initiateMTConnectSequence() {
         if (device.probeDone === true && device.instanceID != null && device.currentDone !== true) {
 
             let currentRequestURL = `${device.endpoint}current`
-
-
             let currentResponse = await axios.get(`${currentRequestURL}`, { headers: { 'Accept': 'text/xml' } })
-
             let dom = new JSDOM(currentResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
@@ -87,8 +85,14 @@ async function initiateMTConnectSequence() {
             let sequences = dom.querySelectorAll('[sequence]')
             let list_of_sequences = []
             sequences.forEach((item) => list_of_sequences.push(item))
-            list_of_sequences.sort((a, b) => parseInt(a.getAttribute('sequence')) - parseInt(b.getAttribute('sequence')))
+            list_of_sequences.sort((a, b) => {
+                let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
+                let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
+                return a_timestamp - b_timestamp
+            })
 
+            //set this data to datastore
+            sequences.forEach((item) => console.log(`Current TS : ${item.getAttribute('timestamp')}`))
             //last before closing set currentRequest done...
             device.currentDone = true
         }
@@ -96,9 +100,54 @@ async function initiateMTConnectSequence() {
         //stage change to sample request
         //record streams of samples and update nextSequence automatically
         //if instance ID changes set probeDone to false
-        
-        if(device.currentDone === true){
-            
+        if (device.currentDone === true) {
+            //get the nextSequence number from the device object
+            let sampleRequest = await axios.get(`${device.endpoint}sample?from=${device.nextSequence}`, { headers: { 'Accept': 'text/xml' } })
+            //check for Error in sample request first
+            if (/error/.test(sampleRequest.data)) {
+                //set currentdone to false now
+                device.probeDone = false
+                continue
+            }
+
+            let dom = new JSDOM(sampleRequest.data).window.document
+            let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
+
+            //checking is instanceID matches if it doesnot skip using continue ! set probeDone false
+            if (instanceID !== device.instanceID) {
+                device.probeDone = false
+                console.log('Instance ID Mismatch')
+                continue
+            }
+
+            //continue getting new values here
+            let firstSequence = dom.querySelector('[firstSequence]').getAttribute('firstSequence')
+            let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
+            let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
+
+            //populate state related keys
+            device.firstSequence = parseInt(firstSequence)
+            device.nextSequence = parseInt(nextSequence)
+            device.lastSequence = parseInt(lastSequence)
+
+            //sort all the sequences in ascending order
+            let sequences = dom.querySelectorAll('[sequence]')
+            let list_of_sequences = []
+            sequences.forEach((item) => list_of_sequences.push(item))
+            list_of_sequences.sort((a, b) => {
+                let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
+                let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
+                return a_timestamp - b_timestamp
+            })
+
+            console.log(sampleRequest.data)
+            list_of_sequences.forEach((item) => console.log(`Sampling TS : ${new Date(item.getAttribute('timestamp')).toLocaleTimeString()}`))
+
+            //check state of nextSequence and lastSequence
+            //if lastSequence is one less then nextSequence keep nextSequence equals to lastSequence
+            //wait for new sequences to arrive
+            device.nextSequence = (device.lastSequence-1)===device.nextSequence?device.lastSequence:device.nextSequence
+
         }
     }
 
