@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom"
 
 const device_1 = {
     'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
-    'keyOfInterest': ['Program', 'ProgramComment', 'ControllerMode'],
+    'keyOfInterest': ['program', 'mode'],
 }
 
 const device_2 = {
@@ -11,8 +11,16 @@ const device_2 = {
     'keyOfInterest': ['Program', 'ProgramComment', 'ControllerMode'],
 }
 
+
+const device_3 = {
+    'endpoint': 'http://192.168.1.28:8082/',
+    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
+}
+
+
+
 //const mtconnect_devices = [device_1, device_2]
-const mtconnect_devices = [device_1]
+const mtconnect_devices = [device_3]
 const localDeviceStateList = []
 
 
@@ -92,7 +100,14 @@ async function initiateMTConnectSequence() {
             })
 
             //set this data to datastore
-            sequences.forEach((item) => console.log(`Current TS : ${item.getAttribute('timestamp')}`))
+            //process sequence line by line
+            list_of_sequences.forEach((item) => {
+                device.keyOfInterest.forEach(keys=>{
+                    if(item.matches(`[name="${keys}"]`)){
+                        console.log(`CURRENT ${keys} ${item.textContent}`)
+                    }
+                })
+            })
             //last before closing set currentRequest done...
             device.currentDone = true
         }
@@ -101,10 +116,16 @@ async function initiateMTConnectSequence() {
         //record streams of samples and update nextSequence automatically
         //if instance ID changes set probeDone to false
         if (device.currentDone === true) {
+            //check state of nextSequence and lastSequence
+            //if lastSequence is one less then nextSequence keep nextSequence equals to lastSequence
+            //wait for new sequences to arrive
+            device.nextSequence = (device.lastSequence + 1) === device.nextSequence ? device.lastSequence : device.nextSequence
             //get the nextSequence number from the device object
             let sampleRequest = await axios.get(`${device.endpoint}sample?from=${device.nextSequence}`, { headers: { 'Accept': 'text/xml' } })
             //check for Error in sample request first
             if (/error/.test(sampleRequest.data)) {
+                console.log(sampleRequest.data)
+                console.log(JSON.stringify(device))
                 //set currentdone to false now
                 device.probeDone = false
                 continue
@@ -140,13 +161,25 @@ async function initiateMTConnectSequence() {
                 return a_timestamp - b_timestamp
             })
 
-            console.log(sampleRequest.data)
-            list_of_sequences.forEach((item) => console.log(`Sampling TS : ${new Date(item.getAttribute('timestamp')).toLocaleTimeString()}`))
+            //check for lastSequenceTimeStamp
+            //store last sequence received
+            if(device.lastSequenceTimeStamp === list_of_sequences[list_of_sequences.length-1].getAttribute('timestamp')){
+                //this is the sample timestamp processed already please continue
+                //console.log(list_of_sequences[list_of_sequences.len-1].getAttribute('timestamp'))
+                continue
+            }
 
-            //check state of nextSequence and lastSequence
-            //if lastSequence is one less then nextSequence keep nextSequence equals to lastSequence
-            //wait for new sequences to arrive
-            device.nextSequence = (device.lastSequence-1)===device.nextSequence?device.lastSequence:device.nextSequence
+            //set last sequence timestamp
+            device.lastSequenceTimeStamp = list_of_sequences[list_of_sequences.length-1].getAttribute('timestamp')
+
+            //process sequence line by line
+            list_of_sequences.forEach((item) => {
+                device.keyOfInterest.forEach(keys=>{
+                    if(item.matches(`[name="${keys}"]`)){
+                        console.log(`CHANGE IN ${keys} ${item.textContent} @ ${item.getAttribute('timestamp')}`)
+                    }
+                })
+            })
 
         }
     }
