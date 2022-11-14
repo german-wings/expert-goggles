@@ -13,14 +13,32 @@ const device_2 = {
 
 
 const device_3 = {
+    'common_name' : 'Machine #6',
+    'endpoint': 'http://192.168.1.184:8082/',
+    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
+}
+
+const device_4 = {
+    'common_name' : 'Machine #3',
+    'endpoint': 'http://192.168.1.116:8082/',
+    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
+}
+
+const device_5 = {
+    'common_name' : 'Machine #2',
+    'endpoint': 'http://192.168.1.202:8082/',
+    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
+}
+
+const device_6 = {
+    'common_name' : 'Machine #5',
     'endpoint': 'http://192.168.1.28:8082/',
     'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
 }
 
 
-
 //const mtconnect_devices = [device_1, device_2]
-const mtconnect_devices = [device_3]
+const mtconnect_devices = [device_3,device_4, device_5 , device_6]
 const localDeviceStateList = []
 
 
@@ -163,7 +181,7 @@ async function initiateMTConnectSequence() {
 
             //check for lastSequenceTimeStamp
             //store last sequence received
-            if(device.lastSequenceTimeStamp === list_of_sequences[list_of_sequences.length-1].getAttribute('timestamp')){
+            if( list_of_sequences.length > 0 && device.lastSequenceTimeStamp === list_of_sequences[list_of_sequences.length-1].getAttribute('timestamp')){
                 //this is the sample timestamp processed already please continue
                 //console.log(list_of_sequences[list_of_sequences.len-1].getAttribute('timestamp'))
                 continue
@@ -176,7 +194,7 @@ async function initiateMTConnectSequence() {
             list_of_sequences.forEach((item) => {
                 device.keyOfInterest.forEach(keys=>{
                     if(item.matches(`[name="${keys}"]`)){
-                        console.log(`CHANGE IN ${keys} ${item.textContent} @ ${item.getAttribute('timestamp')}`)
+                        console.log(`CHANGE IN ${keys} ${item.textContent} @ ${item.getAttribute('timestamp')} ${device.common_name}`)
                     }
                 })
             })
@@ -186,6 +204,12 @@ async function initiateMTConnectSequence() {
 
 }
 
-while (true) {
-    await initiateMTConnectSequence()
+try{
+    while (true) {
+        await initiateMTConnectSequence()
+    }
+}
+
+catch(error){
+    console.log(error)
 }
