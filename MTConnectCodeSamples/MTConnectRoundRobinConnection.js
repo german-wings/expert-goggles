@@ -5,27 +5,20 @@ import lodash from "lodash"
 const device_1 = {
     'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
     'keyOfInterest':[{
-        'storage_name' : 'PROGRAM',
+        'identifier_name' : 'program',
         'mt_connect_name' : 'program',
         'mt_connect_value' : undefined,
         'mt_connect_timestamp' : undefined,
         'storage_timestamp' : undefined
     },{
-        'storage_name' : 'MODE',
+        'identifier_name' : 'mode',
         'mt_connect_name' : 'mode',
         'mt_connect_value' : undefined,
         'mt_connect_timestamp' : undefined,
         'storage_timestamp' : undefined
     },{
-        'storage_name' : 'YAbs',
+        'identifier_name' : 'yabs',
         'mt_connect_name' : 'Yabs',
-        'mt_connect_value' : undefined,
-        'mt_connect_timestamp' : undefined,
-        'storage_timestamp' : undefined
-    },
-    {
-        'storage_name' : 'CREATIONTIME',
-        'mt_connect_name' : 'creationTime',
         'mt_connect_value' : undefined,
         'mt_connect_timestamp' : undefined,
         'storage_timestamp' : undefined
@@ -173,6 +166,9 @@ async function initiateMTConnectSequence() {
                         keys.mt_connect_value = item.textContent
                         keys.mt_connect_timestamp = item.getAttribute('timestamp')
                         keys.storage_timestamp = new Date().toUTCString()
+
+                        //set keys directly on object as a means to monitor state
+                        device[keys.identifier_name] = mt_connect_value
                     }
                 })
             })
