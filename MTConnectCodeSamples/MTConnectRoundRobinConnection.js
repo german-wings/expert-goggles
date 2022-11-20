@@ -1,9 +1,35 @@
 import axios from "axios"
 import { JSDOM } from "jsdom"
+import lodash from "lodash"
 
 const device_1 = {
     'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
-    'keyOfInterest': ['program', 'mode','auto_time','Yabs'],
+    'keyOfInterest':[{
+        'storage_name' : 'PROGRAM',
+        'mt_connect_name' : 'program',
+        'mt_connect_value' : undefined,
+        'mt_connect_timestamp' : undefined,
+        'storage_timestamp' : undefined
+    },{
+        'storage_name' : 'MODE',
+        'mt_connect_name' : 'mode',
+        'mt_connect_value' : undefined,
+        'mt_connect_timestamp' : undefined,
+        'storage_timestamp' : undefined
+    },{
+        'storage_name' : 'YAbs',
+        'mt_connect_name' : 'Yabs',
+        'mt_connect_value' : undefined,
+        'mt_connect_timestamp' : undefined,
+        'storage_timestamp' : undefined
+    },
+    {
+        'storage_name' : 'CREATIONTIME',
+        'mt_connect_name' : 'creationTime',
+        'mt_connect_value' : undefined,
+        'mt_connect_timestamp' : undefined,
+        'storage_timestamp' : undefined
+    }]
 }
 
 const device_2 = {
@@ -82,8 +108,6 @@ async function initiateMTConnectSequence() {
         //the state must be current or sample
         else if (device.nextRequestState === 'current' || device.nextRequestState === 'sample') {
 
-            console.log('Request Type : '+device.nextRequestState)
-
             //set request url using nextRequestState
             let mtConnectRequestURL = device.nextRequestState === 'current' ? `${device.endpoint}current` : `${device.endpoint}sample`
 
@@ -94,7 +118,7 @@ async function initiateMTConnectSequence() {
                 mtConnectRequestURL += `?from=${device.nextSequence}`
             }
 
-            let deviceResponse = await axios.get(`${mtConnectRequestURL}`, { headers: { 'Accept': 'text/xml' } })
+            let deviceResponse = await axios.get(`${mtConnectRequestURL}`, { headers: { 'Accept': 'text/xml' ,'keepAlive':true}})
             let dom = new JSDOM(deviceResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
@@ -112,11 +136,16 @@ async function initiateMTConnectSequence() {
                 continue
             }
 
-            //boiler plate quote
+            //boiler plate code
             //continue getting new values here
             let firstSequence = dom.querySelector('[firstSequence]').getAttribute('firstSequence')
             let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
+
+            //check if the lastSequence processed is also the lastSequence now ?
+            if(device.lastSequence === parseInt(lastSequence)){
+                continue
+            }
 
             //populate state related keys
             device.firstSequence = parseInt(firstSequence)
@@ -126,6 +155,7 @@ async function initiateMTConnectSequence() {
             //sort all the sequences in ascending order
             let sequences = dom.querySelectorAll('[sequence]')
             let list_of_sequences = []
+
             sequences.forEach((item) => list_of_sequences.push(item))
             list_of_sequences.sort((a, b) => {
                 let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
@@ -133,25 +163,30 @@ async function initiateMTConnectSequence() {
                 return a_timestamp - b_timestamp
             })
 
-            //check for lastSequenceTimeStamp
-            //store last sequence received
-            if (list_of_sequences.length > 0 && device.lastSequenceTimeStamp === list_of_sequences[list_of_sequences.length - 1].getAttribute('timestamp')) {
-                //this is the sample timestamp processed already please continue
-                //console.log(list_of_sequences[list_of_sequences.len-1].getAttribute('timestamp'))
-                continue
-            }
+            //store last devicestate for comparision
+            let lastDeviceState = device.keyOfInterest
 
-            //set last sequence timestamp
-            device.lastSequenceTimeStamp = list_of_sequences[list_of_sequences.length - 1].getAttribute('timestamp')
-
-            //process sequence line by line
+            //process sequence line by line duplicates are allowed
             list_of_sequences.forEach((item) => {
                 device.keyOfInterest.forEach(keys => {
-                    if (item.matches(`[name="${keys}"]`)) {
-                        console.log(`CHANGE IN ${keys} ${item.textContent} @ ${item.getAttribute('timestamp')} ${device.common_name}`)
+                    if (item.matches(`[name="${keys.mt_connect_name}"]`)) {
+                        keys.mt_connect_value = item.textContent
+                        keys.mt_connect_timestamp = item.getAttribute('timestamp')
+                        keys.storage_timestamp = new Date().toUTCString()
                     }
                 })
             })
+
+            let newDeviceState = device.keyOfInterest
+
+            if(lodash.isEqual(lastDeviceState , newDeviceState)){
+                //console.log('Last State')
+                //console.dir(lastDeviceState)
+            }
+            else{
+                console.log('New State')
+                console.dir(newDeviceState)
+            }
 
             //set nextRequestState to sample
             device.nextRequestState = 'sample'
