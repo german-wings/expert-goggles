@@ -2,62 +2,61 @@ import axios from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
 
-const device_1 = {
-    'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
-    'keyOfInterest':[{
-        'identifier_name' : 'program',
-        'mt_connect_name' : 'program',
-        'mt_connect_value' : undefined,
-        'mt_connect_timestamp' : undefined,
-        'storage_timestamp' : undefined
-    },{
-        'identifier_name' : 'mode',
-        'mt_connect_name' : 'mode',
-        'mt_connect_value' : undefined,
-        'mt_connect_timestamp' : undefined,
-        'storage_timestamp' : undefined
-    },{
-        'identifier_name' : 'yabs',
-        'mt_connect_name' : 'Yabs',
-        'mt_connect_value' : undefined,
-        'mt_connect_timestamp' : undefined,
-        'storage_timestamp' : undefined
+
+const device_2 = {
+    'common_name': 'Machine #2 ST20Y',
+    'processedSequences' : [],
+    'endpoint': 'http://192.168.1.202:8082/',
+    'keyOfInterest': [{
+        'identifier_name': 'PROGRAM',
+        'mt_connect_name': 'Program',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'MODE',
+        'mt_connect_name': 'Mode',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'RUNSTATUS',
+        'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
     }]
 }
 
-const device_2 = {
-    'endpoint': 'http://mtconnect.mazakcorp.com:5611/',
-    'keyOfInterest': ['Program', 'ProgramComment', 'ControllerMode'],
-}
-
-
-const device_3 = {
-    'common_name': 'Machine #6',
-    'endpoint': 'http://192.168.1.184:8082/',
-    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
-}
-
-const device_4 = {
-    'common_name': 'Machine #3',
-    'endpoint': 'http://192.168.1.116:8082/',
-    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
-}
 
 const device_5 = {
-    'common_name': 'Machine #2',
-    'endpoint': 'http://192.168.1.202:8082/',
-    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
-}
-
-const device_6 = {
-    'common_name': 'Machine #5',
+    'common_name': 'Machine #5 VF4',
+    'processedSequences' : [],
     'endpoint': 'http://192.168.1.28:8082/',
-    'keyOfInterest': ['Program', 'RunStatus', 'Mode'],
+    'keyOfInterest': [{
+        'identifier_name': 'PROGRAM',
+        'mt_connect_name': 'Program',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'MODE',
+        'mt_connect_name': 'Mode',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'RUNSTATUS',
+        'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }]
 }
 
 
-const mtconnect_devices = [device_1]
-//const mtconnect_devices = [device_3, device_4, device_5, device_6]
+//const mtconnect_devices = [device_1]
+const mtconnect_devices = [device_2]
 const localDeviceStateList = []
 
 
@@ -111,7 +110,7 @@ async function initiateMTConnectSequence() {
                 mtConnectRequestURL += `?from=${device.nextSequence}`
             }
 
-            let deviceResponse = await axios.get(`${mtConnectRequestURL}`, { headers: { 'Accept': 'text/xml' ,'keepAlive':true}})
+            let deviceResponse = await axios.get(`${mtConnectRequestURL}`, { headers: { 'Accept': 'text/xml', 'keepAlive': true } })
             let dom = new JSDOM(deviceResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
@@ -136,7 +135,8 @@ async function initiateMTConnectSequence() {
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
             //check if the lastSequence processed is also the lastSequence now ?
-            if(device.lastSequence === parseInt(lastSequence)){
+            if (device.lastSequence == parseInt(lastSequence)) {
+                //console.log('Skipping Sequences already processed')
                 continue
             }
 
@@ -150,14 +150,30 @@ async function initiateMTConnectSequence() {
             let list_of_sequences = []
 
             sequences.forEach((item) => list_of_sequences.push(item))
+
+            //remove all processed sequence numbers !
+            lodash.remove(list_of_sequences , (item)=>{
+                if(device['processedSequences'].includes(parseInt(item.getAttribute('sequence')))){
+                    //removing
+                    //console.log('removing sequence number '+item.getAttribute('sequence'))
+                    return true
+                }
+                else{
+                    device['processedSequences'].push(parseInt(item.getAttribute('sequence')))
+                    //console.log(`Length of Processed Sequences ${device['processedSequences'].length}`)
+                    return false
+                }
+            })
+
             list_of_sequences.sort((a, b) => {
                 let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
                 let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
                 return a_timestamp - b_timestamp
             })
 
-            //store last devicestate for comparision
-            let lastDeviceState = device.keyOfInterest
+            //capture oldState
+            //create a shallow copy
+            const oldState = JSON.parse(JSON.stringify(device.keyOfInterest))
 
             //process sequence line by line duplicates are allowed
             list_of_sequences.forEach((item) => {
@@ -166,25 +182,25 @@ async function initiateMTConnectSequence() {
                         keys.mt_connect_value = item.textContent
                         keys.mt_connect_timestamp = item.getAttribute('timestamp')
                         keys.storage_timestamp = new Date().toUTCString()
-
                         //set keys directly on object as a means to monitor state
-                        device[keys.identifier_name] = mt_connect_value
+                        device[keys.identifier_name] = keys.mt_connect_value + ' ' + item.getAttribute('sequence')+' ' + keys.mt_connect_timestamp
                     }
                 })
             })
 
-            let newDeviceState = device.keyOfInterest
+            const newState = JSON.parse(JSON.stringify(device.keyOfInterest))
 
-            if(lodash.isEqual(lastDeviceState , newDeviceState)){
-                //console.log('Last State')
-                //console.dir(lastDeviceState)
-            }
-            else{
-                console.log('New State')
-                console.dir(newDeviceState)
+            if (!lodash.isEqual(newState, oldState)) {
+                //print all the keysofInterest
+                let identifiers = device.keyOfInterest.map((item) => {
+                    return item.identifier_name
+                })
+                console.log('-----------------------')
+                console.log(device.common_name)
+                identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
+                console.log('**************************')
             }
 
-            //set nextRequestState to sample
             device.nextRequestState = 'sample'
         }
     }
