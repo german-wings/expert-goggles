@@ -1,12 +1,73 @@
 import axios from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
+import winston from "winston";
+
+
+//const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  defaultMeta: { service: 'user-service' },
+  transports: [
+    //
+    // - Write all logs with importance level of `error` or less to `error.log`
+    // - Write all logs with importance level of `info` or less to `combined.log`
+    //
+    new winston.transports.File({ filename: './logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: './logs/combined.log' }),
+  ],
+});
+
+//logger.add(console)
+
+//
+// If we're not in production then log to the `console` with the format:
+// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+//
+/* if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple(),
+  }));
+} */
+
+logger.remove(winston.transports.Console);
+
+
+
+
 
 
 const device_2 = {
     'common_name': 'Machine #2 ST20Y',
     'processedSequences' : [],
     'endpoint': 'http://192.168.1.202:8082/',
+    'keyOfInterest': [{
+        'identifier_name': 'PROGRAM',
+        'mt_connect_name': 'Program',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'MODE',
+        'mt_connect_name': 'Mode',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'RUNSTATUS',
+        'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }]
+}
+
+const device_6 = {
+    'common_name': 'Machine #6 VF2',
+    'processedSequences' : [],
+    'endpoint': 'http://192.168.1.184:8082/',
     'keyOfInterest': [{
         'identifier_name': 'PROGRAM',
         'mt_connect_name': 'Program',
@@ -56,7 +117,7 @@ const device_5 = {
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [device_2]
+const mtconnect_devices = [device_6]
 const localDeviceStateList = []
 
 
@@ -127,6 +188,8 @@ async function initiateMTConnectSequence() {
                 device.nextRequestState = 'probe'
                 continue
             }
+
+            logger.info(deviceResponse.data)
 
             //boiler plate code
             //continue getting new values here
