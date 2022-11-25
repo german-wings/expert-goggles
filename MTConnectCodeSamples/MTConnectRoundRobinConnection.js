@@ -1,47 +1,10 @@
 import axios from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
-import winston from "winston";
-
-
-//const winston = require('winston');
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  defaultMeta: { service: 'user-service' },
-  transports: [
-    //
-    // - Write all logs with importance level of `error` or less to `error.log`
-    // - Write all logs with importance level of `info` or less to `combined.log`
-    //
-    new winston.transports.File({ filename: './logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: './logs/combined.log' }),
-  ],
-});
-
-//logger.add(console)
-
-//
-// If we're not in production then log to the `console` with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
-//
-/* if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple(),
-  }));
-} */
-
-logger.remove(winston.transports.Console);
-
-
-
-
-
 
 const device_2 = {
     'common_name': 'Machine #2 ST20Y',
-    'processedSequences' : [],
+    'processedSequences': [],
     'endpoint': 'http://192.168.1.202:8082/',
     'keyOfInterest': [{
         'identifier_name': 'PROGRAM',
@@ -66,7 +29,7 @@ const device_2 = {
 
 const device_6 = {
     'common_name': 'Machine #6 VF2',
-    'processedSequences' : [],
+    'processedSequences': [],
     'endpoint': 'http://192.168.1.184:8082/',
     'keyOfInterest': [{
         'identifier_name': 'PROGRAM',
@@ -92,7 +55,7 @@ const device_6 = {
 
 const device_5 = {
     'common_name': 'Machine #5 VF4',
-    'processedSequences' : [],
+    'processedSequences': [],
     'endpoint': 'http://192.168.1.28:8082/',
     'keyOfInterest': [{
         'identifier_name': 'PROGRAM',
@@ -116,23 +79,54 @@ const device_5 = {
 }
 
 
+const mazak_device = {
+    'common_name': 'Machine #77 Mazak',
+    'processedSequences': [],
+    'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
+    'keyOfInterest': [{
+        'identifier_name': 'PROGRAM_COMMENT',
+        'mt_connect_name': 'program_cmt',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'MODE',
+        'mt_connect_name': 'mode',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'RUNSTATUS',
+        'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }]
+}
+
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [device_6]
+const mtconnect_devices = [mazak_device]
 const localDeviceStateList = []
 
 
 /*
-//Sample Object for recording state across loop iterations.
+//
 
-nextRequestState : probe / current / sample
-instanceID
-serialNumber
-currentSequence
-keys of interest {objects}
-endpoint
-nextSequence
-firstSequence
-lastSequence
+Algorithm : 
+Probe Request to collect serialNumber and instanceID
+Current Request once only
+followed by a check on instance ID
+followed by a immediate request to sample on the nextSequence received
+check instanceID
+check if OUT OF RANGE error is receieved if so remake the request
+
+on receiveing responses
+check for sequence numbers continuity
+put processed sequences under a array
+
+check for keysOfInterest in sequences
+
+
 */
 
 async function initiateMTConnectSequence() {
@@ -167,7 +161,6 @@ async function initiateMTConnectSequence() {
             //if its a type of sample request
             //then please set the from parameter correctly
             if (device.nextRequestState === 'sample') {
-                device.nextSequence = (device.lastSequence + 1) === device.nextSequence ? device.lastSequence : device.nextSequence
                 mtConnectRequestURL += `?from=${device.nextSequence}`
             }
 
@@ -175,7 +168,7 @@ async function initiateMTConnectSequence() {
             let dom = new JSDOM(deviceResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
 
-            //checking is instanceID matches if it doesnot skip using continue ! set probeDone false
+            //checking if instanceID matches if it doesnot skip using continue ! set probeDone false
             if (instanceID !== device.instanceID) {
                 console.log('Instance ID Mismatch')
                 device.nextRequestState = 'probe'
@@ -183,13 +176,20 @@ async function initiateMTConnectSequence() {
             }
 
             //check if a errorCode exists
+            //look for a OUT_OF_RANGE error
+            //exfill the correct nextSequence number and make a request again
             if (dom.querySelector('Error')) {
                 console.log('Error Detected in response')
-                device.nextRequestState = 'probe'
+                //specifically look for OUT_OF_RANGE
+                if (dom.querySelector('[errorCode="OUT_OF_RANGE"]')) {
+                    const errorContent = dom.querySelector('[errorCode="OUT_OF_RANGE"]').textContent
+                    //resetting nextSequence number now !
+                    console.log('Resetting nextSequence number')
+                    device.nextSequence = parseInt(errorContent.match(/d/g)[0])
+                }
                 continue
             }
 
-            logger.info(deviceResponse.data)
 
             //boiler plate code
             //continue getting new values here
@@ -197,42 +197,39 @@ async function initiateMTConnectSequence() {
             let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
-            //check if the lastSequence processed is also the lastSequence now ?
-            if (device.lastSequence == parseInt(lastSequence)) {
-                //console.log('Skipping Sequences already processed')
+            //check here for sequence continuity
+            //sort all the sequences in ascending order
+            let sequences = dom.querySelectorAll('[sequence]')
+            let list_of_sequences = []
+            sequences.forEach((item) => list_of_sequences.push(item))
+            list_of_sequences.sort((a, b) => {
+                let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
+                let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
+                return a_timestamp - b_timestamp
+            })
+
+            //if no sequence is received please skip iteration
+            if(list_of_sequences.length <=0){
+                console.log('Empty Sequences')
+                console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
                 continue
             }
+
+            //check for sequence continuity
+            //we will compare last our processed sequence with the first one received ! now
+            const firstSequenceReceived = parseInt(list_of_sequences[0].getAttribute('sequence'))
+            const lastProcessedSequence = device.processedSequences[device.processedSequences.length-1]
+            if(firstSequenceReceived != lastProcessedSequence+1 && device.processedSequences.length!=0){
+                console.log(`Sequence number is broken ! Last Processed ${lastProcessedSequence} received now ${firstSequenceReceived}`)
+                continue
+            }
+
 
             //populate state related keys
             device.firstSequence = parseInt(firstSequence)
             device.nextSequence = parseInt(nextSequence)
             device.lastSequence = parseInt(lastSequence)
 
-            //sort all the sequences in ascending order
-            let sequences = dom.querySelectorAll('[sequence]')
-            let list_of_sequences = []
-
-            sequences.forEach((item) => list_of_sequences.push(item))
-
-            //remove all processed sequence numbers !
-            lodash.remove(list_of_sequences , (item)=>{
-                if(device['processedSequences'].includes(parseInt(item.getAttribute('sequence')))){
-                    //removing
-                    //console.log('removing sequence number '+item.getAttribute('sequence'))
-                    return true
-                }
-                else{
-                    device['processedSequences'].push(parseInt(item.getAttribute('sequence')))
-                    //console.log(`Length of Processed Sequences ${device['processedSequences'].length}`)
-                    return false
-                }
-            })
-
-            list_of_sequences.sort((a, b) => {
-                let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
-                let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
-                return a_timestamp - b_timestamp
-            })
 
             //capture oldState
             //create a shallow copy
@@ -246,7 +243,7 @@ async function initiateMTConnectSequence() {
                         keys.mt_connect_timestamp = item.getAttribute('timestamp')
                         keys.storage_timestamp = new Date().toUTCString()
                         //set keys directly on object as a means to monitor state
-                        device[keys.identifier_name] = keys.mt_connect_value + ' ' + item.getAttribute('sequence')+' ' + keys.mt_connect_timestamp
+                        device[keys.identifier_name] = keys.mt_connect_value + ' ' + item.getAttribute('sequence') + ' ' + keys.mt_connect_timestamp
                     }
                 })
             })
@@ -263,6 +260,12 @@ async function initiateMTConnectSequence() {
                 identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
                 console.log('**************************')
             }
+
+
+            //add all the sequences to the processedBucket list now
+            list_of_sequences.forEach(item=>device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
+
+            list_of_sequences.forEach(item=>console.log(`Processing ${item.getAttribute('sequence')}`))
 
             device.nextRequestState = 'sample'
         }
