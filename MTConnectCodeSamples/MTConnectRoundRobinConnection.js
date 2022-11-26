@@ -105,7 +105,7 @@ const mazak_device = {
 }
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [mazak_device]
+const mtconnect_devices = [device_6]
 const localDeviceStateList = []
 
 
@@ -179,13 +179,13 @@ async function initiateMTConnectSequence() {
             //look for a OUT_OF_RANGE error
             //exfill the correct nextSequence number and make a request again
             if (dom.querySelector('Error')) {
-                console.log('Error Detected in response')
+                //console.log('Error Detected in response')
                 //specifically look for OUT_OF_RANGE
                 if (dom.querySelector('[errorCode="OUT_OF_RANGE"]')) {
                     const errorContent = dom.querySelector('[errorCode="OUT_OF_RANGE"]').textContent
                     //resetting nextSequence number now !
                     console.log('Resetting nextSequence number')
-                    device.nextSequence = parseInt(errorContent.match(/d/g)[0])
+                    device.nextSequence = parseInt(errorContent.match(/\d+/g)[0])+1
                 }
                 continue
             }
@@ -198,7 +198,7 @@ async function initiateMTConnectSequence() {
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
             //check here for sequence continuity
-            //sort all the sequences in ascending order
+            //sort all the sequences in ascending order based on timestamp
             let sequences = dom.querySelectorAll('[sequence]')
             let list_of_sequences = []
             sequences.forEach((item) => list_of_sequences.push(item))
@@ -206,6 +206,13 @@ async function initiateMTConnectSequence() {
                 let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
                 let b_timestamp = new Date(b.getAttribute('timestamp')).getTime()
                 return a_timestamp - b_timestamp
+            })
+
+            //sort all sequences in order based on sequence numbers
+            list_of_sequences.sort((a,b)=>{
+                let sequence_a = parseInt(a.getAttribute('sequence'))
+                let sequence_b = parseInt(b.getAttribute('sequence'))
+                return sequence_a - sequence_b
             })
 
             //if no sequence is received please skip iteration
