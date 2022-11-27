@@ -104,8 +104,27 @@ const mazak_device = {
     }]
 }
 
+const simulator_device = {
+    'common_name': 'Machine #5 VF4',
+    'processedSequences': [],
+    'endpoint': 'http://127.0.01:5000/',
+    'keyOfInterest': [{
+        'identifier_name': 'PROGRAM',
+        'mt_connect_name': 'Program',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }, {
+        'identifier_name': 'RUNSTATUS',
+        'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    }]
+}
+
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [device_6]
+const mtconnect_devices = [simulator_device]
 const localDeviceStateList = []
 
 
@@ -141,11 +160,11 @@ async function initiateMTConnectSequence() {
             let probeResponse = await axios.get(`${device.endpoint}probe`, { headers: { 'Accept': 'text/xml' } })
             let dom = new JSDOM(probeResponse.data).window.document
             let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
-            let serialNumber = dom.querySelector('[serialNumber]').getAttribute('serialNumber')
+            //let serialNumber = dom.querySelector('[serialNumber]').getAttribute('serialNumber')?'Default':'Default'
             if (instanceID == null && serialNumber == null) {
                 throw "Probe Response inconsistent"
             }
-            device.serialNumber = serialNumber
+            //device.serialNumber = serialNumber
             device.instanceID = instanceID
 
             //set nextRequestState to current
@@ -177,17 +196,23 @@ async function initiateMTConnectSequence() {
 
             //check if a errorCode exists
             //look for a OUT_OF_RANGE error
-            //exfill the correct nextSequence number and make a request again
+            //exfill the correct nextSequence number check if we have already processed that one ?
+            //if yes then we are asking for new sequences and we are good
+            //if we have not processed then we have missed and we must reset
             if (dom.querySelector('Error')) {
-                //console.log('Error Detected in response')
-                //specifically look for OUT_OF_RANGE
                 if (dom.querySelector('[errorCode="OUT_OF_RANGE"]')) {
                     const errorContent = dom.querySelector('[errorCode="OUT_OF_RANGE"]').textContent
                     //resetting nextSequence number now !
-                    console.log('Resetting nextSequence number')
-                    device.nextSequence = parseInt(errorContent.match(/\d+/g)[0])+1
+                    errorSequenceNumber = parseInt(errorContent.match(/\d+/g)[0]) + 1
+                    if (device.processedSequences.indexOf(errorSequenceNumber)) {
+                        //this is a processed sequence we are good
+                        console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
+                        continue
+                    }
+                    else {
+                        console.log(`Reset now we last processed ${device.processedSequences[device.processedSequences.length - 1]} we must be at ${errorSequenceNumber}`)
+                    }
                 }
-                continue
             }
 
 
@@ -197,7 +222,11 @@ async function initiateMTConnectSequence() {
             let nextSequence = dom.querySelector('[nextSequence]').getAttribute('nextSequence')
             let lastSequence = dom.querySelector('[lastSequence]').getAttribute('lastSequence')
 
-            //check here for sequence continuity
+            //populate state related keys
+            device.firstSequence = parseInt(firstSequence)
+            device.nextSequence = parseInt(nextSequence)
+            device.lastSequence = parseInt(lastSequence)
+
             //sort all the sequences in ascending order based on timestamp
             let sequences = dom.querySelectorAll('[sequence]')
             let list_of_sequences = []
@@ -208,35 +237,12 @@ async function initiateMTConnectSequence() {
                 return a_timestamp - b_timestamp
             })
 
-            //sort all sequences in order based on sequence numbers
-            list_of_sequences.sort((a,b)=>{
-                let sequence_a = parseInt(a.getAttribute('sequence'))
-                let sequence_b = parseInt(b.getAttribute('sequence'))
-                return sequence_a - sequence_b
-            })
-
             //if no sequence is received please skip iteration
-            if(list_of_sequences.length <=0){
-                console.log('Empty Sequences')
-                console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
+            if (list_of_sequences.length <= 0) {
+                //console.log('Empty Sequences')
+                //console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
                 continue
             }
-
-            //check for sequence continuity
-            //we will compare last our processed sequence with the first one received ! now
-            const firstSequenceReceived = parseInt(list_of_sequences[0].getAttribute('sequence'))
-            const lastProcessedSequence = device.processedSequences[device.processedSequences.length-1]
-            if(firstSequenceReceived != lastProcessedSequence+1 && device.processedSequences.length!=0){
-                console.log(`Sequence number is broken ! Last Processed ${lastProcessedSequence} received now ${firstSequenceReceived}`)
-                continue
-            }
-
-
-            //populate state related keys
-            device.firstSequence = parseInt(firstSequence)
-            device.nextSequence = parseInt(nextSequence)
-            device.lastSequence = parseInt(lastSequence)
-
 
             //capture oldState
             //create a shallow copy
@@ -262,17 +268,23 @@ async function initiateMTConnectSequence() {
                 let identifiers = device.keyOfInterest.map((item) => {
                     return item.identifier_name
                 })
-                console.log('-----------------------')
-                console.log(device.common_name)
-                identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
-                console.log('**************************')
+                //console.log('-----------------------')
+                //console.log(device.common_name)
+                //identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
+                //console.log('**************************')
             }
 
 
             //add all the sequences to the processedBucket list now
-            list_of_sequences.forEach(item=>device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
+            //sort all sequences in order based on sequence numbers
+            list_of_sequences.sort((a, b) => {
+                let sequence_a = parseInt(a.getAttribute('sequence'))
+                let sequence_b = parseInt(b.getAttribute('sequence'))
+                return sequence_a - sequence_b
+            })
+            list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
 
-            list_of_sequences.forEach(item=>console.log(`Processing ${item.getAttribute('sequence')}`))
+            list_of_sequences.forEach(item => console.log(`Processing ${item.getAttribute('sequence')} Total ${list_of_sequences.length}`))
 
             device.nextRequestState = 'sample'
         }
