@@ -24,6 +24,19 @@ const device_2 = {
         'mt_connect_value': undefined,
         'mt_connect_timestamp': undefined,
         'storage_timestamp': undefined
+    },
+    {
+        'identifier_name': 'DHMT CODES',
+        'mt_connect_name': 'DHMT_Codes',
+        set mt_connect_value(value) {
+            const ACTIVE_M_CODE = value.split(',')[2]
+            this.ACTIVE_M_CODE
+        },
+        get mt_connect_value() {
+            return this.ACTIVE_M_CODE
+        },
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
     }]
 }
 
@@ -46,6 +59,13 @@ const device_6 = {
     }, {
         'identifier_name': 'RUNSTATUS',
         'mt_connect_name': 'RunStatus',
+        'mt_connect_value': undefined,
+        'mt_connect_timestamp': undefined,
+        'storage_timestamp': undefined
+    },
+    {
+        'identifier_name': 'DHMT CODES',
+        'mt_connect_name': 'DHMT_Codes',
         'mt_connect_value': undefined,
         'mt_connect_timestamp': undefined,
         'storage_timestamp': undefined
@@ -124,7 +144,7 @@ const simulator_device = {
 }
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [simulator_device]
+const mtconnect_devices = [device_2 , device_6]
 const localDeviceStateList = []
 
 
@@ -203,10 +223,10 @@ async function initiateMTConnectSequence() {
                 if (dom.querySelector('[errorCode="OUT_OF_RANGE"]')) {
                     const errorContent = dom.querySelector('[errorCode="OUT_OF_RANGE"]').textContent
                     //resetting nextSequence number now !
-                    errorSequenceNumber = parseInt(errorContent.match(/\d+/g)[0]) + 1
+                    let errorSequenceNumber = parseInt(errorContent.match(/\d+/g)[0]) + 1
                     if (device.processedSequences.indexOf(errorSequenceNumber)) {
                         //this is a processed sequence we are good
-                        console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
+                        //console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
                         continue
                     }
                     else {
@@ -239,8 +259,8 @@ async function initiateMTConnectSequence() {
 
             //if no sequence is received please skip iteration
             if (list_of_sequences.length <= 0) {
-                //console.log('Empty Sequences')
-                //console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
+                console.log('Empty Sequences')
+                console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
                 continue
             }
 
@@ -268,10 +288,10 @@ async function initiateMTConnectSequence() {
                 let identifiers = device.keyOfInterest.map((item) => {
                     return item.identifier_name
                 })
-                //console.log('-----------------------')
-                //console.log(device.common_name)
-                //identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
-                //console.log('**************************')
+                console.log('-----------------------')
+                console.log(device.common_name)
+                identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
+                console.log('**************************')
             }
 
 
@@ -284,7 +304,7 @@ async function initiateMTConnectSequence() {
             })
             list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
 
-            list_of_sequences.forEach(item => console.log(`Processing ${item.getAttribute('sequence')} Total ${list_of_sequences.length}`))
+            //list_of_sequences.forEach(item => console.log(`Processing ${item.getAttribute('sequence')} Total ${list_of_sequences.length}`))
 
             device.nextRequestState = 'sample'
         }
