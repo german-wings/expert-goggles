@@ -143,6 +143,49 @@ const simulator_device = {
     }]
 }
 
+
+function Device(commonName , url){
+    Device.commonName = commonName
+    Device.endpoint = url
+    Device.nextSequence = undefined
+    Device.lastSequence = undefined
+    Device.processedSequences = []
+    Device.nextRequestState = 'probe'
+
+    function resetState(){
+        this.nextSequence = undefined
+        this.nextRequestState = 'probe'
+        this.lastSequence = undefined
+        this.processedSequences = []
+    }
+
+    function updateProcessedSequences(list_of_sequences){
+
+    }
+
+    function updateState(state){
+        switch(state.name){
+
+            case 'DHMT_Codes':
+                break
+            case 'RunStatus':
+                break
+            case 'Program':
+                break
+            case 'mode':
+                break
+        }
+    }
+
+    function getState(){
+        return this.state
+    }
+
+}
+
+
+
+
 //const mtconnect_devices = [device_1]
 const mtconnect_devices = [device_2 , device_6]
 const localDeviceStateList = []
