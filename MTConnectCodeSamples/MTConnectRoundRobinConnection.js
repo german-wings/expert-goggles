@@ -164,15 +164,28 @@ function Device(commonName , url){
     }
 
     function updateState(state){
-        switch(state.name){
+        switch(state.getAttribute('name')){
 
             case 'DHMT_Codes':
+                //get DHMT Code and check for M Code if its M00 , M30 , M01
+                //if it is then we must check this.state.RUNSTATUS if its stopped okay if its active and DHMT has any
+                //of the conditions please change this.state.RUNSTATUS to STOPPED
+                const ACTIVEMCODE = state.textContent.split(',')[2]
+                if(this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '1' || ACTIVEMCODE ==='0')){
+                    //the code M30 / M01 / M00 is active we must set this.state.RUNSTATUS to STOPPED
+                    this.state.RUNSTATUS === "STOPPED"
+                    this.state.RUNSTATUS_CHANGE_TIME = state.getAttribute('timestamp')
+                }
                 break
             case 'RunStatus':
+                this.state.RUNSTATUS = state.textContent
+                this.state.RUNSTATUS_CHANGE_TIME = state.getAttribute('timestamp')
                 break
             case 'Program':
+                this.state.PROGRAM = state.textContent
                 break
             case 'mode':
+                this.state.MODE = state.textContent
                 break
         }
     }
@@ -187,7 +200,7 @@ function Device(commonName , url){
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [device_2 , device_6]
+const mtconnect_devices = [new Device('BHAVAR\'s DMG MORI SEIKI DMC FD DUO BLOCK' , 'http://127.0.0.1:5000')]
 const localDeviceStateList = []
 
 
@@ -218,6 +231,9 @@ async function initiateMTConnectSequence() {
         //check if the device has a probeRequest conducted?
         let device = mtconnect_devices[counter]
         if (device.nextRequestState === undefined || device.nextRequestState === 'probe') {
+
+            console.log('Resetting...')
+            device.resetState()
             console.log('Probing..')
             //please conduct a probe request
             let probeResponse = await axios.get(`${device.endpoint}probe`, { headers: { 'Accept': 'text/xml' } })
@@ -300,43 +316,11 @@ async function initiateMTConnectSequence() {
                 return a_timestamp - b_timestamp
             })
 
-            //if no sequence is received please skip iteration
-            if (list_of_sequences.length <= 0) {
-                console.log('Empty Sequences')
-                console.log(`Device NS ${device.nextSequence} - Received Sequence ${nextSequence}`)
-                continue
-            }
 
-            //capture oldState
-            //create a shallow copy
-            const oldState = JSON.parse(JSON.stringify(device.keyOfInterest))
-
-            //process sequence line by line duplicates are allowed
-            list_of_sequences.forEach((item) => {
-                device.keyOfInterest.forEach(keys => {
-                    if (item.matches(`[name="${keys.mt_connect_name}"]`)) {
-                        keys.mt_connect_value = item.textContent
-                        keys.mt_connect_timestamp = item.getAttribute('timestamp')
-                        keys.storage_timestamp = new Date().toUTCString()
-                        //set keys directly on object as a means to monitor state
-                        device[keys.identifier_name] = keys.mt_connect_value + ' ' + item.getAttribute('sequence') + ' ' + keys.mt_connect_timestamp
-                    }
-                })
+            //start processing sequence numbers ordered by TimeStamp
+            list_of_sequences.forEach((sequence)=>{
+                device.updateState(sequence)
             })
-
-            const newState = JSON.parse(JSON.stringify(device.keyOfInterest))
-
-            if (!lodash.isEqual(newState, oldState)) {
-                //print all the keysofInterest
-                let identifiers = device.keyOfInterest.map((item) => {
-                    return item.identifier_name
-                })
-                console.log('-----------------------')
-                console.log(device.common_name)
-                identifiers.forEach((item) => console.log(`${item} : ${device[item]}`))
-                console.log('**************************')
-            }
-
 
             //add all the sequences to the processedBucket list now
             //sort all sequences in order based on sequence numbers
@@ -346,8 +330,6 @@ async function initiateMTConnectSequence() {
                 return sequence_a - sequence_b
             })
             list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
-
-            //list_of_sequences.forEach(item => console.log(`Processing ${item.getAttribute('sequence')} Total ${list_of_sequences.length}`))
 
             device.nextRequestState = 'sample'
         }
