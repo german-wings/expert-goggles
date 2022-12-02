@@ -144,26 +144,30 @@ const simulator_device = {
 }
 
 
-function Device(commonName , url){
-    Device.commonName = commonName
-    Device.endpoint = url
-    Device.nextSequence = undefined
-    Device.lastSequence = undefined
-    Device.processedSequences = []
-    Device.nextRequestState = 'probe'
+class Device {
 
-    function resetState(){
+    constructor(commonName , url){
+        this.commonName = commonName
+        this.endpoint = url
+        this.nextSequence = undefined
+        this.lastSequence = undefined
+        this.processedSequences = []
+        this.nextRequestState = 'probe'
+        this.state = {}
+    }
+
+    resetState(){
         this.nextSequence = undefined
         this.nextRequestState = 'probe'
         this.lastSequence = undefined
         this.processedSequences = []
     }
 
-    function updateProcessedSequences(list_of_sequences){
+    updateProcessedSequences(list_of_sequences){
 
     }
 
-    function updateState(state){
+    updateState(state){
         switch(state.getAttribute('name')){
 
             case 'DHMT_Codes':
@@ -174,23 +178,26 @@ function Device(commonName , url){
                 if(this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '1' || ACTIVEMCODE ==='0')){
                     //the code M30 / M01 / M00 is active we must set this.state.RUNSTATUS to STOPPED
                     this.state.RUNSTATUS === "STOPPED"
-                    this.state.RUNSTATUS_CHANGE_TIME = state.getAttribute('timestamp')
+                    this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
                 }
                 break
             case 'RunStatus':
                 this.state.RUNSTATUS = state.textContent
-                this.state.RUNSTATUS_CHANGE_TIME = state.getAttribute('timestamp')
+                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
                 break
             case 'Program':
                 this.state.PROGRAM = state.textContent
+                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
                 break
-            case 'mode':
+            case 'Mode':
                 this.state.MODE = state.textContent
+                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
                 break
         }
     }
 
-    function getState(){
+    getState(){
+        this.state.COMMONNAME = this.commonName
         return this.state
     }
 
@@ -200,7 +207,7 @@ function Device(commonName , url){
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [new Device('BHAVAR\'s DMG MORI SEIKI DMC FD DUO BLOCK' , 'http://127.0.0.1:5000')]
+const mtconnect_devices = [new Device('BHAVAR\'s DMG MORI SEIKI DMC FD DUO BLOCK' , 'http://127.0.0.1:5000/')]
 const localDeviceStateList = []
 
 
@@ -290,6 +297,7 @@ async function initiateMTConnectSequence() {
                     }
                     else {
                         console.log(`Reset now we last processed ${device.processedSequences[device.processedSequences.length - 1]} we must be at ${errorSequenceNumber}`)
+                        device.nextRequestState = 'probe'
                     }
                 }
             }
@@ -330,6 +338,8 @@ async function initiateMTConnectSequence() {
                 return sequence_a - sequence_b
             })
             list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
+
+            console.log(device.getState())
 
             device.nextRequestState = 'sample'
         }
