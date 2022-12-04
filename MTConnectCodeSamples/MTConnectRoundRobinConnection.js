@@ -154,6 +154,7 @@ class Device {
         this.processedSequences = []
         this.nextRequestState = 'probe'
         this.state = {}
+        this.state.BROKERINSTANCEID = Math.floor(Math.random()+1)*10
     }
 
     resetState(){
@@ -325,6 +326,10 @@ async function initiateMTConnectSequence() {
             })
 
 
+            //save local state to compare !
+            const previousState = JSON.parse(JSON.stringify(device.getState()))
+
+
             //start processing sequence numbers ordered by TimeStamp
             list_of_sequences.forEach((sequence)=>{
                 device.updateState(sequence)
@@ -339,7 +344,11 @@ async function initiateMTConnectSequence() {
             })
             list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
 
-            console.log(device.getState())
+
+            //compare previous state and new state
+            if(!lodash.isEqual(previousState , device.getState())){
+                console.dir(device.getState())
+            }
 
             device.nextRequestState = 'sample'
         }
