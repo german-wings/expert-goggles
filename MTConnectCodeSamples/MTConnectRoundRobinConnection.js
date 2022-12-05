@@ -4,6 +4,17 @@ import lodash from "lodash"
 import {MongoClient} from "mongodb"
 
 
+//helper function
+function correctTime(timestamp){
+    const insert_time_stamp = new Date(timestamp).getTime()
+    const current_time_in_millis = new Date().getTime()
+    let offset_time = current_time_in_millis - insert_time_stamp
+    offset_time = offset_time > 0 ? offset_time : 0
+
+    return new Date(insert_time_stamp + offset_time).toISOString()
+}
+
+
 class Device {
 
     constructor(commonName, url) {
@@ -41,21 +52,21 @@ class Device {
                 if (this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '1' || ACTIVEMCODE === '0')) {
                     //the code M30 / M01 / M00 is active we must set this.state.RUNSTATUS to STOPPED
                     this.state.RUNSTATUS === "STOPPED"
-                    this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
+                    this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 }
                 break
             case 'RunStatus':
                 //guard against UNAVAILABLE entry
                 this.state.RUNSTATUS = state.textContent==="UNAVAILABLE"?"STOPPED":state.textContent
-                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
+                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
             case 'Program':
                 this.state.PROGRAM = state.textContent
-                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
+                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
             case 'Mode':
                 this.state.MODE = state.textContent
-                this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
+                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
         }
     }
@@ -165,7 +176,7 @@ async function initiateMTConnectSequence() {
                         let errorSequenceNumber = parseInt(errorContent.match(/\d+/g)[0]) + 1
                         if (device.processedSequences.indexOf(errorSequenceNumber)) {
                             //this is a processed sequence we are good
-                            //console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
+                            console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
                             continue
                         }
                         else {
@@ -221,8 +232,8 @@ async function initiateMTConnectSequence() {
                 if (!lodash.isEqual(previousState, device.getState())) {
                     //we must write the state here now !
                     const event = JSON.parse(JSON.stringify(device.getState()))
-                    const message = await collection.insertOne(event)
-                    console.dir(message.acknowledged === true ? "Writen Successfully.." : "Problem....")
+                    //const message = await collection.insertOne(event)
+                    //console.dir(message.acknowledged === true ? "Writen Successfully.." : "Problem....")
                     console.dir(device.getState())
                 }
 
@@ -232,10 +243,27 @@ async function initiateMTConnectSequence() {
 
         catch (error) {
             if(error instanceof AxiosError){
-                console.log('Device is probably unreachable...')
+                //check what type of error was received
+                //we are looking for a device unreachable error
+                //if we found one we must reset the device state and attempt to reconnect...
+                if(error.code === "ECONNREFUSED"){
+                    //host has refused to connect probably unreachable
+                    device.resetState()
+                }
+
+                else{
+                    //probably a different type of error
+                    console.log(error)
+                }
+                
+            }
+
+            else{
+                console.log(error)
             }
 
             console.log(error)
+
         }
     }
 
