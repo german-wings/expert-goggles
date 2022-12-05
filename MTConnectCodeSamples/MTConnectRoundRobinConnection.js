@@ -1,6 +1,7 @@
-import axios from "axios"
+import axios, { AxiosError } from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
+import {MongoClient} from "mongodb"
 
 
 class Device {
@@ -44,7 +45,8 @@ class Device {
                 }
                 break
             case 'RunStatus':
-                this.state.RUNSTATUS = state.textContent
+                //guard against UNAVAILABLE entry
+                this.state.RUNSTATUS = state.textContent==="UNAVAILABLE"?"STOPPED":state.textContent
                 this.state.STATE_CHANGE_TIME = state.getAttribute('timestamp')
                 break
             case 'Program':
@@ -72,6 +74,11 @@ class Device {
 
 //const mtconnect_devices = [device_1]
 const mtconnect_devices = [new Device('BHAVAR\'s MORI SEIKI NLX 2500-700', 'http://127.0.0.1:5000/')]
+
+
+//prep up database connections!
+const mongoclient = new MongoClient("mongodb://127.0.0.1:27017")
+const collection = mongoclient.db("Master").collection("MTConnectFeed")
 
 
 /*
@@ -212,6 +219,10 @@ async function initiateMTConnectSequence() {
 
                 //compare previous state and new state
                 if (!lodash.isEqual(previousState, device.getState())) {
+                    //we must write the state here now !
+                    const event = JSON.parse(JSON.stringify(device.getState()))
+                    const message = await collection.insertOne(event)
+                    console.dir(message.acknowledged === true ? "Writen Successfully.." : "Problem....")
                     console.dir(device.getState())
                 }
 
@@ -220,6 +231,10 @@ async function initiateMTConnectSequence() {
         }
 
         catch (error) {
+            if(error instanceof AxiosError){
+                console.log('Device is probably unreachable...')
+            }
+
             console.log(error)
         }
     }
