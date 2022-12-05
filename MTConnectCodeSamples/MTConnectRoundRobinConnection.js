@@ -2,147 +2,6 @@ import axios from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
 
-const device_2 = {
-    'common_name': 'Machine #2 ST20Y',
-    'processedSequences': [],
-    'endpoint': 'http://192.168.1.202:8082/',
-    'keyOfInterest': [{
-        'identifier_name': 'PROGRAM',
-        'mt_connect_name': 'Program',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'MODE',
-        'mt_connect_name': 'Mode',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'RUNSTATUS',
-        'mt_connect_name': 'RunStatus',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    },
-    {
-        'identifier_name': 'DHMT CODES',
-        'mt_connect_name': 'DHMT_Codes',
-        set mt_connect_value(value) {
-            const ACTIVE_M_CODE = value.split(',')[2]
-            this.ACTIVE_M_CODE
-        },
-        get mt_connect_value() {
-            return this.ACTIVE_M_CODE
-        },
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }]
-}
-
-const device_6 = {
-    'common_name': 'Machine #6 VF2',
-    'processedSequences': [],
-    'endpoint': 'http://192.168.1.184:8082/',
-    'keyOfInterest': [{
-        'identifier_name': 'PROGRAM',
-        'mt_connect_name': 'Program',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'MODE',
-        'mt_connect_name': 'Mode',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'RUNSTATUS',
-        'mt_connect_name': 'RunStatus',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    },
-    {
-        'identifier_name': 'DHMT CODES',
-        'mt_connect_name': 'DHMT_Codes',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }]
-}
-
-
-const device_5 = {
-    'common_name': 'Machine #5 VF4',
-    'processedSequences': [],
-    'endpoint': 'http://192.168.1.28:8082/',
-    'keyOfInterest': [{
-        'identifier_name': 'PROGRAM',
-        'mt_connect_name': 'Program',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'MODE',
-        'mt_connect_name': 'Mode',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'RUNSTATUS',
-        'mt_connect_name': 'RunStatus',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }]
-}
-
-
-const mazak_device = {
-    'common_name': 'Machine #77 Mazak',
-    'processedSequences': [],
-    'endpoint': 'http://mtconnect.mazakcorp.com:5610/',
-    'keyOfInterest': [{
-        'identifier_name': 'PROGRAM_COMMENT',
-        'mt_connect_name': 'program_cmt',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'MODE',
-        'mt_connect_name': 'mode',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'RUNSTATUS',
-        'mt_connect_name': 'RunStatus',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }]
-}
-
-const simulator_device = {
-    'common_name': 'Machine #5 VF4',
-    'processedSequences': [],
-    'endpoint': 'http://127.0.01:5000/',
-    'keyOfInterest': [{
-        'identifier_name': 'PROGRAM',
-        'mt_connect_name': 'Program',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }, {
-        'identifier_name': 'RUNSTATUS',
-        'mt_connect_name': 'RunStatus',
-        'mt_connect_value': undefined,
-        'mt_connect_timestamp': undefined,
-        'storage_timestamp': undefined
-    }]
-}
-
 
 class Device {
 
@@ -154,7 +13,8 @@ class Device {
         this.processedSequences = []
         this.nextRequestState = 'probe'
         this.state = {}
-        this.state.BROKERINSTANCEID = new Date().getTime()
+        this.AGENT_BROKER_INSTANCEID = new Date().getTime().toString()
+        this.serialNumber = undefined
     }
 
     resetState() {
@@ -162,6 +22,7 @@ class Device {
         this.nextRequestState = 'probe'
         this.lastSequence = undefined
         this.processedSequences = []
+        this.serialNumber = undefined
     }
 
     updateProcessedSequences(list_of_sequences) {
@@ -199,6 +60,8 @@ class Device {
 
     getState() {
         this.state.COMMONNAME = this.commonName
+        this.state.AGENT_BROKER_INSTANCEID = this.instanceID
+        this.state.BROKER_CLOUD_INSTANCEID = this.AGENT_BROKER_INSTANCEID
         return this.state
     }
 
@@ -208,8 +71,7 @@ class Device {
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [new Device('BHAVAR\'s DMG MORI SEIKI DMC FD DUO BLOCK', 'http://127.0.0.1:5000/')]
-const localDeviceStateList = []
+const mtconnect_devices = [new Device('BHAVAR\'s MORI SEIKI NLX 2500-700', 'http://127.0.0.1:5000/')]
 
 
 /*
@@ -253,6 +115,7 @@ async function initiateMTConnectSequence() {
                 if (instanceID == null && serialNumber == null) {
                     throw "Probe Response inconsistent"
                 }
+
                 //device.serialNumber = serialNumber
                 device.instanceID = instanceID
 
@@ -278,7 +141,7 @@ async function initiateMTConnectSequence() {
 
                 //checking if instanceID matches if it doesnot skip using continue ! set probeDone false
                 if (instanceID !== device.instanceID) {
-                    console.log('Instance ID Mismatch')
+                    console.log(`Instance ID Error : Received ${instanceID}, having ${device.state.instanceID}`)
                     device.nextRequestState = 'probe'
                     continue
                 }
