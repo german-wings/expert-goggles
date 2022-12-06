@@ -1,11 +1,11 @@
 import axios, { AxiosError } from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
-import {MongoClient} from "mongodb"
+import { MongoClient, MongoError, MongoServerSelectionError } from "mongodb"
 
 
 //helper function
-function correctTime(timestamp){
+function correctTime(timestamp) {
     const insert_time_stamp = new Date(timestamp).getTime()
     const current_time_in_millis = new Date().getTime()
     let offset_time = current_time_in_millis - insert_time_stamp
@@ -49,15 +49,19 @@ class Device {
                 //if it is then we must check this.state.RUNSTATUS if its stopped okay if its active and DHMT has any
                 //of the conditions please change this.state.RUNSTATUS to STOPPED
                 const ACTIVEMCODE = state.textContent.split(',')[2]
-                if (this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '1' || ACTIVEMCODE === '0')) {
+                if (this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '01' || ACTIVEMCODE === '00')) {
                     //the code M30 / M01 / M00 is active we must set this.state.RUNSTATUS to STOPPED
                     this.state.RUNSTATUS === "STOPPED"
                     this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 }
+                if(this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === "03" || ACTIVEMCODE === "04")){
+                    //set the state back again to ACTIVE
+                    this.state.RUNSTATUS = "ACTIVE"
+                }
                 break
             case 'RunStatus':
                 //guard against UNAVAILABLE entry
-                this.state.RUNSTATUS = state.textContent==="UNAVAILABLE"?"STOPPED":state.textContent
+                this.state.RUNSTATUS = state.textContent === "UNAVAILABLE" ? "STOPPED" : state.textContent
                 this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
             case 'Program':
@@ -85,11 +89,6 @@ class Device {
 
 //const mtconnect_devices = [device_1]
 const mtconnect_devices = [new Device('BHAVAR\'s MORI SEIKI NLX 2500-700', 'http://127.0.0.1:5000/')]
-
-
-//prep up database connections!
-const mongoclient = new MongoClient("mongodb://127.0.0.1:27017")
-const collection = mongoclient.db("Master").collection("MTConnectFeed")
 
 
 /*
@@ -242,23 +241,24 @@ async function initiateMTConnectSequence() {
         }
 
         catch (error) {
-            if(error instanceof AxiosError){
+            if (error instanceof AxiosError) {
                 //check what type of error was received
                 //we are looking for a device unreachable error
                 //if we found one we must reset the device state and attempt to reconnect...
-                if(error.code === "ECONNREFUSED"){
+                if (error.code === "ECONNREFUSED") {
                     //host has refused to connect probably unreachable
                     device.resetState()
                 }
 
-                else{
-                    //probably a different type of error
+                else {
                     console.log(error)
                 }
-                
+
             }
 
-            else{
+            else if (error instanceof MongoServerSelectionError) {
+                //probably a Database is not reachable
+                device.resetState()
                 console.log(error)
             }
 
@@ -270,11 +270,17 @@ async function initiateMTConnectSequence() {
 }
 
 try {
+    //prep up database connections!
+    const mongoclient = new MongoClient("mongodb://127.0.0.1:27017")
+    const collection = mongoclient.db("Master").collection("MTConnectFeed")
+
     while (true) {
         await initiateMTConnectSequence()
     }
 }
 
 catch (error) {
-    console.log(error)
+    if (error instanceof MongoError) {
+        console.log(error)
+    }
 }
