@@ -44,7 +44,7 @@ class Device {
         switch (state.getAttribute('name')) {
 
             case 'SpindleSpeed':
-                //just check if the spindle speed is zero
+                //just check if the spindle speed is zerp
                 const currentSpindleSpeed = parseFloat(state.textContent).toFixed(2)
                 if (currentSpindleSpeed == 0.0) {
                     //spindles zero we must check if we have a past trigger code with us
