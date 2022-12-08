@@ -2,7 +2,16 @@ import axios, { AxiosError } from "axios"
 import { JSDOM } from "jsdom"
 import lodash from "lodash"
 import { MongoClient, MongoError, MongoServerSelectionError } from "mongodb"
-import {correctTime} from "./Helpers/Time"
+//import {correctTime} from "../Helpers/Time"
+
+function correctTime(timestamp) {
+    const insert_time_stamp = new Date(timestamp).getTime()
+    const current_time_in_millis = new Date().getTime()
+    let offset_time = current_time_in_millis - insert_time_stamp
+    offset_time = offset_time > 0 ? offset_time : 0
+
+    return new Date(insert_time_stamp + offset_time).toISOString()
+}
 
 class Device {
 
@@ -31,33 +40,121 @@ class Device {
     }
 
     updateState(state) {
+        //console.log(`${state.getAttribute('name')} - ${state.textContent}`)
         switch (state.getAttribute('name')) {
 
+            case 'SpindleSpeed':
+                //just check if the spindle speed is zero
+                const currentSpindleSpeed = parseFloat(state.textContent).toFixed(2)
+                if (currentSpindleSpeed == 0.0) {
+                    //spindles zero we must check if we have a past trigger code with us
+                    if (this.state.MODE === "AUTOMATIC") {
+                        //now we must check if the state is set to ACTIVE 
+                        // if it is we must check for trigger code of M03 or M04
+                        if (this.state.RUNSTATUS === "ACTIVE") {
+
+                            //if SPINDLE ZERO CODE IS ACTIVE Runstatus must be zero anyways
+                            if(this.TRIGGERCODE === "SPINDLE_ZERO"){
+                                break
+                            }
+                            if (this.TRIGGERCODE === "M03" || this.TRIGGERCODE === "M04") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "SPINDLE_ZERO"
+                            }
+                        }
+                    }
+                }
+                break
             case 'DHMT_Codes':
                 //get DHMT Code and check for M Code if its M00 , M30 , M01
                 //if it is then we must check this.state.RUNSTATUS if its stopped okay if its active and DHMT has any
                 //of the conditions please change this.state.RUNSTATUS to STOPPED
-                const ACTIVEMCODE = state.textContent.split(',')[2]
-                if (this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === '30' || ACTIVEMCODE === '01' || ACTIVEMCODE === '00')) {
-                    //the code M30 / M01 / M00 is active we must set this.state.RUNSTATUS to STOPPED
-                    this.state.RUNSTATUS === "STOPPED"
-                    this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                }
-                if(this.state.RUNSTATUS === "ACTIVE" && (ACTIVEMCODE === "03" || ACTIVEMCODE === "04")){
-                    //set the state back again to ACTIVE
-                    this.state.RUNSTATUS = "ACTIVE"
+                this.ACTIVEMCODE = state.textContent.split(',')[2]
+                console.log(`ACTIVE CODE ${this.ACTIVEMCODE}`)
+                switch (this.ACTIVEMCODE) {
+                    case '00':
+                        //if M00 is reached , we must check if we are in automatic mode or Manual Data Input Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            //now we must check if the state is set to ACTIVE 
+                            // if it is then we must set it STOPPED
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M00"
+                            }
+                        }
+                        break
+                    case '30':
+                        //if M30 is reached , we must check if we are in automatic mode or Manual Data Input Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            //now we must check if the state is set to ACTIVE 
+                            // if it is then we must set it STOPPED
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M30"
+                            }
+                        }
+                        break
+                    case '01':
+                        //if M01 is reached , we must check if we are in automatic mode or Manual Data Input Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            //now we must check if the state is set to ACTIVE 
+                            // if it is then we must set it STOPPED
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M01"
+                            }
+                        }
+                        break
+                    case '03':
+                        //if M03 is reached , we must check if we are in automatic mode or Manual Data Input Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            //now we must check if the state is set to STOPPED 
+                            // if it is then we must set it ACTIVE
+                            if (this.state.RUNSTATUS === "STOPPED") {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M03"
+                            }
+                        }
+                        break
+                    case '04':
+                        //if M03 is reached , we must check if we are in automatic mode or Manual Data Input Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            //now we must check if the state is set to STOPPED 
+                            // if it is then we must set it ACTIVE
+                            if (this.state.RUNSTATUS === "STOPPED") {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M04"
+                            }
+                        }
+                        break
                 }
                 break
             case 'RunStatus':
                 //guard against UNAVAILABLE entry
+                //we must check if the same state was caught before RunStatus
+                //if it was then we dont need to make any change to the state if was not then 
+                //we must make a change
+                const currentState = state.textContent
+                if(currentState === this.state.RUNSTATUS){
+                    break
+                }
                 this.state.RUNSTATUS = state.textContent === "UNAVAILABLE" ? "STOPPED" : state.textContent
                 this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                this.TRIGGERCODE = "RUNSTATUS"
                 break
             case 'Program':
+                this.TRIGGERCODE = "PROGRAM"
                 this.state.PROGRAM = state.textContent
                 this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
             case 'Mode':
+                this.TRIGGERCODE = "MODE"
                 this.state.MODE = state.textContent
                 this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                 break
@@ -68,6 +165,7 @@ class Device {
         this.state.COMMONNAME = this.commonName
         this.state.AGENT_BROKER_INSTANCEID = this.instanceID
         this.state.BROKER_CLOUD_INSTANCEID = this.AGENT_BROKER_INSTANCEID
+        this.state.TRIGGERCODE = this.TRIGGERCODE
         return this.state
     }
 
@@ -77,7 +175,7 @@ class Device {
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [new Device('BHAVAR\'s MORI SEIKI NLX 2500-700', 'http://127.0.0.1:5000/')]
+const mtconnect_devices = [new Device('Machine #5', 'http://192.168.1.29:8082/')]
 
 
 /*
@@ -164,7 +262,7 @@ async function initiateMTConnectSequence() {
                         let errorSequenceNumber = parseInt(errorContent.match(/\d+/g)[0]) + 1
                         if (device.processedSequences.indexOf(errorSequenceNumber)) {
                             //this is a processed sequence we are good
-                            console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
+                            //console.log(`OUT_OF_RANGE_ERROR with ${device.nextSequence} vs should be ${errorSequenceNumber}`)
                             continue
                         }
                         else {
@@ -197,13 +295,28 @@ async function initiateMTConnectSequence() {
                 })
 
 
-                //save local state to compare !
-                const previousState = JSON.parse(JSON.stringify(device.getState()))
-
-
                 //start processing sequence numbers ordered by TimeStamp
                 list_of_sequences.forEach((sequence) => {
+
+                    //save local state to compare per sequence basis !
+                    const previousState = JSON.parse(JSON.stringify(device.getState()))
+
+                    //start update per sequence basis
                     device.updateState(sequence)
+
+                    //as the state is updated we must check now for any changes per sequence number basis
+                    //if changes are detected by per sequence basis we can exactly start and stop the states
+                    //compare previous state and new state
+                    //just checking if all the keys are present
+                    if (Object.keys(device.getState()).length === 8) {
+                        if (!lodash.isEqual(previousState, device.getState())) {
+                            //we must write the state here now !
+                            const event = JSON.parse(JSON.stringify(device.getState()))
+                            //const message = await collection.insertOne(event)
+                            //console.dir(message.acknowledged === true ? "Writen Successfully.." : "Problem....")
+                            console.dir(device.getState())
+                        }
+                    }
                 })
 
                 //add all the sequences to the processedBucket list now
@@ -214,16 +327,6 @@ async function initiateMTConnectSequence() {
                     return sequence_a - sequence_b
                 })
                 list_of_sequences.forEach(item => device.processedSequences.push(parseInt(item.getAttribute('sequence'))))
-
-
-                //compare previous state and new state
-                if (!lodash.isEqual(previousState, device.getState())) {
-                    //we must write the state here now !
-                    const event = JSON.parse(JSON.stringify(device.getState()))
-                    //const message = await collection.insertOne(event)
-                    //console.dir(message.acknowledged === true ? "Writen Successfully.." : "Problem....")
-                    console.dir(device.getState())
-                }
 
                 device.nextRequestState = 'sample'
             }
