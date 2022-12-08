@@ -42,49 +42,12 @@ class Device {
     updateState(state) {
         //console.log(`${state.getAttribute('name')} - ${state.textContent}`)
         switch (state.getAttribute('name')) {
-
-            case 'SpindleSpeed':
-                //just check if the spindle speed is zerp
-                const currentSpindleSpeed = parseFloat(state.textContent).toFixed(2)
-                if (currentSpindleSpeed == 0.0) {
-                    //spindles zero we must check if we have a past trigger code with us
-                    if (this.state.MODE === "AUTOMATIC") {
-                        //now we must check if the state is set to ACTIVE 
-                        // if it is we must check for trigger code of M03 or M04
-                        if (this.state.RUNSTATUS === "ACTIVE") {
-
-                            //if SPINDLE ZERO CODE IS ACTIVE Runstatus must be zero anyways
-                            if(this.TRIGGERCODE === "SPINDLE_ZERO"){
-                                break
-                            }
-                            if (this.TRIGGERCODE === "M03" || this.TRIGGERCODE === "M04") {
-                                this.state.RUNSTATUS = "STOPPED"
-                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                                this.TRIGGERCODE = "SPINDLE_ZERO"
-                            }
-                        }
-                    }
-                }
-                break
             case 'DHMT_Codes':
-                //get DHMT Code and check for M Code if its M00 , M30 , M01
+                //get DHMT Code and check for M Code if its M30
                 //if it is then we must check this.state.RUNSTATUS if its stopped okay if its active and DHMT has any
                 //of the conditions please change this.state.RUNSTATUS to STOPPED
                 this.ACTIVEMCODE = state.textContent.split(',')[2]
-                console.log(`ACTIVE CODE ${this.ACTIVEMCODE}`)
                 switch (this.ACTIVEMCODE) {
-                    case '00':
-                        //if M00 is reached , we must check if we are in automatic mode or Manual Data Input Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            //now we must check if the state is set to ACTIVE 
-                            // if it is then we must set it STOPPED
-                            if (this.state.RUNSTATUS === "ACTIVE") {
-                                this.state.RUNSTATUS = "STOPPED"
-                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                                this.TRIGGERCODE = "M00"
-                            }
-                        }
-                        break
                     case '30':
                         //if M30 is reached , we must check if we are in automatic mode or Manual Data Input Mode
                         if (this.state.MODE === "AUTOMATIC") {
@@ -94,42 +57,6 @@ class Device {
                                 this.state.RUNSTATUS = "STOPPED"
                                 this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                                 this.TRIGGERCODE = "M30"
-                            }
-                        }
-                        break
-                    case '01':
-                        //if M01 is reached , we must check if we are in automatic mode or Manual Data Input Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            //now we must check if the state is set to ACTIVE 
-                            // if it is then we must set it STOPPED
-                            if (this.state.RUNSTATUS === "ACTIVE") {
-                                this.state.RUNSTATUS = "STOPPED"
-                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                                this.TRIGGERCODE = "M01"
-                            }
-                        }
-                        break
-                    case '03':
-                        //if M03 is reached , we must check if we are in automatic mode or Manual Data Input Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            //now we must check if the state is set to STOPPED 
-                            // if it is then we must set it ACTIVE
-                            if (this.state.RUNSTATUS === "STOPPED") {
-                                this.state.RUNSTATUS = "ACTIVE"
-                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                                this.TRIGGERCODE = "M03"
-                            }
-                        }
-                        break
-                    case '04':
-                        //if M03 is reached , we must check if we are in automatic mode or Manual Data Input Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            //now we must check if the state is set to STOPPED 
-                            // if it is then we must set it ACTIVE
-                            if (this.state.RUNSTATUS === "STOPPED") {
-                                this.state.RUNSTATUS = "ACTIVE"
-                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
-                                this.TRIGGERCODE = "M04"
                             }
                         }
                         break
@@ -175,7 +102,7 @@ class Device {
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [new Device('Machine #5', 'http://192.168.1.29:8082/')]
+const mtconnect_devices = [new Device('Machine #5', 'http://192.168.1.29:8082/'),new Device('Machine #2', 'http://192.168.1.202:8082/')]
 
 
 /*
