@@ -10,7 +10,7 @@ function correctTime(timestamp) {
     let offset_time = current_time_in_millis - insert_time_stamp
     offset_time = offset_time > 0 ? offset_time : 0
 
-    return new Date(insert_time_stamp + offset_time).toISOString()
+    return new Date(insert_time_stamp + offset_time).toLocaleTimeString()
 }
 
 class Device {
@@ -40,34 +40,8 @@ class Device {
     }
 
     updateState(state) {
-        //console.log(`${state.getAttribute('name')} - ${state.textContent}`)
+        //console.log(`${state.getAttribute('name')} - ${state.textContent.toString()}`.substring(0, 50))
         switch (state.getAttribute('name')) {
-
-            case 'XYZActual':
-                //machine is set in motion ?
-                if (this.TRIGGERCODE === "M00" || this.TRIGGERCODE === "M01" || this.TRIGGERCODE === "M00") {
-                    if (this.state.MODE === "AUTOMATIC") {
-                        if (this.state.RUNSTATUS === "STOPPED") {
-                            this.state.RUNSTATUS = "ACTIVE"
-                            this.TRIGGERCODE = "XYZActual"
-                        }
-                    }
-                }
-                break
-            case 'SpindleSpeed':
-                const currentSpindleSpeed = parseFloat(state.textContent).toFixed(2)
-                if (currentSpindleSpeed === 0) {
-                    //spindle speed has decreased the machine must be stopping now !
-                    if (this.TRIGGERCODE === "M03" || this.TRIGGERCODE === "M04") {
-                        if (this.state.MODE === "AUTOMATIC") {
-                            if (this.state.RUNSTATUS === "ACTIVE") {
-                                this.state.RUNSTATUS = "STOPPED"
-                                this.TRIGGERCODE = "SPINDLE_ZERO"
-                            }
-                        }
-                    }
-                }
-                break
 
             case 'DHMT_Codes':
                 //get DHMT Code and check for M Code if its M30
@@ -75,39 +49,39 @@ class Device {
                 //of the conditions please change this.state.RUNSTATUS to STOPPED
                 this.ACTIVEMCODE = state.textContent.split(',')[2]
                 switch (this.ACTIVEMCODE) {
+                    case '04':
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "STOPPED" &&(this.TRIGGERCODE === "M00" || this.TRIGGERCODE === "M30" || this.TRIGGERCODE === "M01")) {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M04"
+                            }
+                        }
+                        break
+                    case '03':
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "STOPPED" &&(this.TRIGGERCODE === "M00" || this.TRIGGERCODE === "M30" || this.TRIGGERCODE === "M01")) {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
+                                this.TRIGGERCODE = "M03"
+                            }
+                        }
+                        break
                     case '00':
-                        //M0 is reached we must check if we are in AUTOMATIC Mode
                         if (this.state.MODE === "AUTOMATIC") {
                             if (this.state.RUNSTATUS === "ACTIVE") {
                                 this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                                 this.TRIGGERCODE = "M00"
                             }
                         }
                         break
                     case '01':
-                        //M0 is reached we must check if we are in AUTOMATIC Mode
                         if (this.state.MODE === "AUTOMATIC") {
                             if (this.state.RUNSTATUS === "ACTIVE") {
                                 this.state.RUNSTATUS = "STOPPED"
+                                this.state.STATE_CHANGE_TIME = correctTime(state.getAttribute('timestamp'))
                                 this.TRIGGERCODE = "M01"
-                            }
-                        }
-                        break
-                    case '03':
-                        //M0 is reached we must check if we are in AUTOMATIC Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            if (this.state.RUNSTATUS === "STOPPED") {
-                                this.state.RUNSTATUS = "ACTIVE"
-                                this.TRIGGERCODE = "M03"
-                            }
-                        }
-                        break
-                    case '04':
-                        //M0 is reached we must check if we are in AUTOMATIC Mode
-                        if (this.state.MODE === "AUTOMATIC") {
-                            if (this.state.RUNSTATUS === "STOPPED") {
-                                this.state.RUNSTATUS = "ACTIVE"
-                                this.TRIGGERCODE = "M04"
                             }
                         }
                         break
@@ -127,11 +101,11 @@ class Device {
                 break
             case 'RunStatus':
                 //guard against UNAVAILABLE entry
-                //we must check if the same state was caught before RunStatus
+                //we must check if the same state was caught before RunStatus specifically by M30
                 //if it was then we dont need to make any change to the state if was not then 
                 //we must make a change
                 const currentState = state.textContent
-                if (currentState === this.state.RUNSTATUS) {
+                if (currentState === this.state.RUNSTATUS && this.TRIGGERCODE === "M30") {
                     break
                 }
                 this.state.RUNSTATUS = state.textContent === "UNAVAILABLE" ? "STOPPED" : state.textContent
@@ -167,6 +141,8 @@ class Device {
 
 //const mtconnect_devices = [device_1]
 //new Device('Machine #5', 'http://192.168.1.29:8082/')
+//new Device('Machine #2', 'http://192.168.1.202:8082/')
+//
 const mtconnect_devices = [new Device('Machine #2', 'http://192.168.1.202:8082/')]
 
 
@@ -329,14 +305,7 @@ async function initiateMTConnectSequence() {
                 //check what type of error was received
                 //we are looking for a device unreachable error
                 //if we found one we must reset the device state and attempt to reconnect...
-                if (error.code === "ECONNREFUSED") {
-                    //host has refused to connect probably unreachable
-                    device.resetState()
-                }
-
-                else {
-                    console.log(error)
-                }
+                console.log('Network Error')
 
             }
 
