@@ -42,12 +42,75 @@ class Device {
     updateState(state) {
         //console.log(`${state.getAttribute('name')} - ${state.textContent}`)
         switch (state.getAttribute('name')) {
+
+            case 'XYZActual':
+                //machine is set in motion ?
+                if (this.TRIGGERCODE === "M00" || this.TRIGGERCODE === "M01" || this.TRIGGERCODE === "M00") {
+                    if (this.state.MODE === "AUTOMATIC") {
+                        if (this.state.RUNSTATUS === "STOPPED") {
+                            this.state.RUNSTATUS = "ACTIVE"
+                            this.TRIGGERCODE = "XYZActual"
+                        }
+                    }
+                }
+                break
+            case 'SpindleSpeed':
+                const currentSpindleSpeed = parseFloat(state.textContent).toFixed(2)
+                if (currentSpindleSpeed === 0) {
+                    //spindle speed has decreased the machine must be stopping now !
+                    if (this.TRIGGERCODE === "M03" || this.TRIGGERCODE === "M04") {
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.TRIGGERCODE = "SPINDLE_ZERO"
+                            }
+                        }
+                    }
+                }
+                break
+
             case 'DHMT_Codes':
                 //get DHMT Code and check for M Code if its M30
                 //if it is then we must check this.state.RUNSTATUS if its stopped okay if its active and DHMT has any
                 //of the conditions please change this.state.RUNSTATUS to STOPPED
                 this.ACTIVEMCODE = state.textContent.split(',')[2]
                 switch (this.ACTIVEMCODE) {
+                    case '00':
+                        //M0 is reached we must check if we are in AUTOMATIC Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.TRIGGERCODE = "M00"
+                            }
+                        }
+                        break
+                    case '01':
+                        //M0 is reached we must check if we are in AUTOMATIC Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "ACTIVE") {
+                                this.state.RUNSTATUS = "STOPPED"
+                                this.TRIGGERCODE = "M01"
+                            }
+                        }
+                        break
+                    case '03':
+                        //M0 is reached we must check if we are in AUTOMATIC Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "STOPPED") {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.TRIGGERCODE = "M03"
+                            }
+                        }
+                        break
+                    case '04':
+                        //M0 is reached we must check if we are in AUTOMATIC Mode
+                        if (this.state.MODE === "AUTOMATIC") {
+                            if (this.state.RUNSTATUS === "STOPPED") {
+                                this.state.RUNSTATUS = "ACTIVE"
+                                this.TRIGGERCODE = "M04"
+                            }
+                        }
+                        break
                     case '30':
                         //if M30 is reached , we must check if we are in automatic mode or Manual Data Input Mode
                         if (this.state.MODE === "AUTOMATIC") {
@@ -68,7 +131,7 @@ class Device {
                 //if it was then we dont need to make any change to the state if was not then 
                 //we must make a change
                 const currentState = state.textContent
-                if(currentState === this.state.RUNSTATUS){
+                if (currentState === this.state.RUNSTATUS) {
                     break
                 }
                 this.state.RUNSTATUS = state.textContent === "UNAVAILABLE" ? "STOPPED" : state.textContent
@@ -93,6 +156,7 @@ class Device {
         this.state.AGENT_BROKER_INSTANCEID = this.instanceID
         this.state.BROKER_CLOUD_INSTANCEID = this.AGENT_BROKER_INSTANCEID
         this.state.TRIGGERCODE = this.TRIGGERCODE
+        this.state.SERIALNUMBER = this.serialNumber
         return this.state
     }
 
@@ -102,7 +166,8 @@ class Device {
 
 
 //const mtconnect_devices = [device_1]
-const mtconnect_devices = [new Device('Machine #5', 'http://192.168.1.29:8082/'),new Device('Machine #2', 'http://192.168.1.202:8082/')]
+//new Device('Machine #5', 'http://192.168.1.29:8082/')
+const mtconnect_devices = [new Device('Machine #2', 'http://192.168.1.202:8082/')]
 
 
 /*
@@ -142,12 +207,12 @@ async function initiateMTConnectSequence() {
                 let probeResponse = await axios.get(`${device.endpoint}probe`, { headers: { 'Accept': 'text/xml' } })
                 let dom = new JSDOM(probeResponse.data).window.document
                 let instanceID = dom.querySelector('[instanceId]').getAttribute('instanceId')
-                //let serialNumber = dom.querySelector('[serialNumber]').getAttribute('serialNumber')?'Default':'Default'
+                let serialNumber = dom.querySelector('[serialNumber]').getAttribute('serialNumber')
                 if (instanceID == null && serialNumber == null) {
                     throw "Probe Response inconsistent"
                 }
 
-                //device.serialNumber = serialNumber
+                device.serialNumber = serialNumber
                 device.instanceID = instanceID
 
                 //set nextRequestState to current
@@ -235,7 +300,7 @@ async function initiateMTConnectSequence() {
                     //if changes are detected by per sequence basis we can exactly start and stop the states
                     //compare previous state and new state
                     //just checking if all the keys are present
-                    if (Object.keys(device.getState()).length === 8) {
+                    if (Object.keys(device.getState()).length === 9) {
                         if (!lodash.isEqual(previousState, device.getState())) {
                             //we must write the state here now !
                             const event = JSON.parse(JSON.stringify(device.getState()))
