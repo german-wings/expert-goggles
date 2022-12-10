@@ -7,7 +7,7 @@ export function correctTime(timestamp) {
 
     //const time_value =  new Date(insert_time_stamp + offset_time).toISOString()
     const time_value =  new Date(insert_time_stamp + offset_time)
-    return (`${time_value.toLocaleDateString()} ${time_value.toLocaleTimeString()}`)
+    return (`${time_value.toISOString()}`)
 }
 
 

@@ -10,7 +10,7 @@ import { timer } from "./Helpers/Time.js"
 //new Device('Machine #5', 'http://192.168.1.29:8082/')
 //new Device('Machine #2', 'http://192.168.1.202:8082/')
 //
-const mtconnect_devices = [new HaasDevice('Machine #5', 'http://192.168.1.29:8082/')]
+const mtconnect_devices = [ new HaasDevice('Machine #2', 'http://192.168.1.202:8082/')]
 
 
 /*
