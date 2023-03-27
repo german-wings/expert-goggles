@@ -74,6 +74,7 @@ class HaasBroker {
         catch (error) {
             //will handle general network error on client side or on server side
             //will handle programming errors
+            console.log(error)
             throw error
         }
 
@@ -116,6 +117,7 @@ class HaasBroker {
         }
 
         catch (error) {
+            console.log(error)
             throw error
         }
     }
@@ -171,6 +173,7 @@ class HaasBroker {
         }
 
         catch (error) {
+            console.log(error)
             throw error
         }
     }
@@ -251,7 +254,7 @@ class HaasBroker {
             })
 
 
-            await timer(10)
+            await timer(5)
         }
     }
 
