@@ -12,7 +12,7 @@ Reset and start the process again
 
 */
 
-import axios from "axios"
+import axios, { AxiosError } from "axios"
 import { JSDOM } from "jsdom"
 import _ from "lodash"
 import XMLSerializer from "xmlserializer"
@@ -72,10 +72,14 @@ class HaasBroker {
 
         }
         catch (error) {
-            //will handle general network error on client side or on server side
-            //will handle programming errors
-            console.log(error)
-            throw error
+            if (error instanceof AxiosError) {
+                console.log(`General Axios Error Reached ${error.message}`)
+            }
+            else {
+                console.log(`Unknown Error ${error}`)
+            }
+            //reset to probe.
+            this.nextRequest = 'probe'
         }
 
     }
@@ -117,8 +121,15 @@ class HaasBroker {
         }
 
         catch (error) {
-            console.log(error)
-            throw error
+            if (error instanceof AxiosError) {
+                console.log(`General Axios Error Reached ${error.message}`)
+            }
+            else {
+                console.log(`Unknown Error ${error}`)
+            }
+
+            //reset to probe.
+            this.nextRequest = 'probe'
         }
     }
 
@@ -173,8 +184,15 @@ class HaasBroker {
         }
 
         catch (error) {
-            console.log(error)
-            throw error
+            if (error instanceof AxiosError) {
+                console.log(`General Axios Error Reached ${error.message}`)
+            }
+            else {
+                console.log(`Unknown Error ${error}`)
+            }
+
+            //reset to probe.
+            this.nextRequest = 'probe'
         }
     }
 
@@ -199,14 +217,14 @@ class HaasBroker {
             if (elements_timestamp > current_timestamp) {
                 //clocks running too fast on the machine
                 let correctedTime = elements_timestamp - this.driftTime
-                element.setAttribute("localTime",new Date(correctedTime).toLocaleString())
+                element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
                 element.setAttribute("correctedTime", elements_timestamp - this.driftTime)
             }
 
             else {
                 //clocks running too slow on the machine
                 let correctedTime = elements_timestamp + this.driftTime
-                element.setAttribute("localTime",new Date(correctedTime).toLocaleString())
+                element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
                 element.setAttribute("correctedTime", elements_timestamp + this.driftTime)
             }
             listOfEvents.push(element)
@@ -246,20 +264,15 @@ class HaasBroker {
             deltaEvents.forEach(element => {
                 //write to a file
                 console.log(element)
-                fs.appendFile('log.txt', element + '\n', (error) => {
-                    if (error) {
-                        console.log('Error in writing')
-                    }
-                })
             })
 
 
-            await timer(5)
+            await timer(2)
         }
     }
 
 }
 
-//let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
-let haasObject = new HaasBroker("192.168.1.152", "8082", "http")
+let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
+//let haasObject = new HaasBroker("192.168.1.152", "8082", "http")
 haasObject.run()
