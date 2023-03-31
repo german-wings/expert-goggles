@@ -16,7 +16,9 @@ import axios, { AxiosError } from "axios"
 import { JSDOM } from "jsdom"
 import _ from "lodash"
 import XMLSerializer from "xmlserializer"
-import fs from 'fs'
+import xml2js from "xml2js"
+import getCredentials from "./Helper/secretProvider.js"
+import { MongoClient, ServerApiVersion } from "mongodb"
 
 class HaasBroker {
     constructor(ip_address, port_number, protocol) {
@@ -28,6 +30,10 @@ class HaasBroker {
         this.nextRequest = "probe"
         this.offloadedElements = 0
         this.globalEventBuffer = []
+
+        //dbConection will stay null until connected.
+        this.dbConnection = null
+        this.setupDatabase()
     }
 
     async initiateProbe() {
@@ -256,23 +262,64 @@ class HaasBroker {
             await this.initiateCurrent()
             await this.initiateSample()
 
-            //offload the data to Message Queue here
-            let deltaEvents = this.globalEventBuffer.slice(this.offloadedElements)
-            this.offloadedElements += deltaEvents.length
+            //storing in the database
+            await this.sendToQueue(this.globalEventBuffer)
+            await timer(10)
+        }
+    }
 
-            //filter the data before sending to the message queue
-            deltaEvents.forEach(element => {
-                //write to a file
-                console.log(element)
+    /**
+     * @param {Array} eventList
+     */
+    async sendToQueue(eventList) {
+
+        try {
+            if (this.dbConnection === null) {
+                return
+            }
+            const collection = this.dbConnection.collection("EventQueue")
+            //offload the data to Message Queue here
+            let deltaEvents = eventList.slice(this.offloadedElements)
+            //convert delta element to json format
+            deltaEvents.forEach((deltaElement) => {
+                xml2js.parseString(deltaElement, (error, result) => {
+                    if (!error) {
+                        // filter events here !
+                        let filterEvents = ["eventlogentry", "program", "controllermode", "execution"]
+                        if (_.includes(filterEvents, Object.keys(result)[0])) {
+                            collection.insertOne(result, (error, response) => {
+                                if (error) {
+                                    this.dbConnection = null
+                                    throw error
+                                }
+                                else {
+                                    console.log("Written..")
+                                }
+                            })
+                        }
+                    }
+                })
             })
 
+            this.offloadedElements += deltaEvents.length
 
-            await timer(2)
         }
+        catch (error) {
+            //error reached ...
+            throw error
+        }
+
+    }
+
+    async setupDatabase() {
+        const credentials = await getCredentials()
+        const connectionURL = `mongodb+srv://${credentials.username}:${credentials.password}@cluster0.a4crvvz.mongodb.net/?retryWrites=true&w=majority`
+        this.dbConnection = await new MongoClient(connectionURL).connect()
+        this.dbConnection = this.dbConnection.db("Events")
     }
 
 }
 
-let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
-//let haasObject = new HaasBroker("192.168.1.152", "8082", "http")
+//let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
+let haasObject = new HaasBroker("192.168.1.153", "8082", "http")
 haasObject.run()
