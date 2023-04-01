@@ -30,6 +30,7 @@ class HaasBroker {
         this.nextRequest = "probe"
         this.offloadedElements = 0
         this.globalEventBuffer = []
+        this.brokerInstanceId = null
 
         //dbConection will stay null until connected.
         this.dbConnection = null
@@ -51,6 +52,10 @@ class HaasBroker {
         this.instanceId = null
         this.globalEventBuffer = []
         this.offloadedElements = 0
+        this.brokerInstanceId = null
+
+        //set broker instanceID
+        this.brokerInstanceId = new Date().getTime()
 
         let probe_url = `${this.protocol}://${this.ip_address}:${this.port_number}/${this.nextRequest}`
 
@@ -224,14 +229,14 @@ class HaasBroker {
                 //clocks running too fast on the machine
                 let correctedTime = elements_timestamp - this.driftTime
                 element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
-                element.setAttribute("correctedTime", elements_timestamp - this.driftTime)
+                element.setAttribute("brokerInstanceId", this.brokerInstanceId)
             }
 
             else {
                 //clocks running too slow on the machine
                 let correctedTime = elements_timestamp + this.driftTime
                 element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
-                element.setAttribute("correctedTime", elements_timestamp + this.driftTime)
+                element.setAttribute("brokerInstanceId", this.brokerInstanceId)
             }
             listOfEvents.push(element)
         })
@@ -321,5 +326,5 @@ class HaasBroker {
 }
 
 //let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
-let haasObject = new HaasBroker("192.168.1.153", "8082", "http")
+let haasObject = new HaasBroker("192.168.1.155", "8082", "http")
 haasObject.run()
