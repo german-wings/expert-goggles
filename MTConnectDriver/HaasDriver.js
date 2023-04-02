@@ -17,8 +17,6 @@ import { JSDOM } from "jsdom"
 import _ from "lodash"
 import XMLSerializer from "xmlserializer"
 import xml2js from "xml2js"
-import getCredentials from "./Helper/secretProvider.js"
-import { MongoClient, ServerApiVersion } from "mongodb"
 
 class HaasBroker {
     constructor(ip_address, port_number, protocol) {
@@ -32,9 +30,6 @@ class HaasBroker {
         this.globalEventBuffer = []
         this.brokerInstanceId = null
 
-        //dbConection will stay null until connected.
-        this.dbConnection = null
-        this.setupDatabase()
     }
 
     async initiateProbe() {
@@ -127,7 +122,7 @@ class HaasBroker {
 
 
             //fill the buffer with artifacts
-            this.fillBuffer(currentResponseDom)
+            await this.fillBuffer(currentResponseDom)
             this.nextRequest = "sample"
         }
 
@@ -190,7 +185,7 @@ class HaasBroker {
             this.lastSequence = parseInt(sampleResponseDom.querySelector('[lastSequence]').getAttribute('lastSequence'))
 
             //fill the buffer with artifacts
-            this.fillBuffer(sampleResponseDom)
+            await this.fillBuffer(sampleResponseDom)
             this.nextRequest = "sample"
         }
 
@@ -211,7 +206,7 @@ class HaasBroker {
     /**
     @param {Document} responseData
     */
-    fillBuffer(responseData) {
+    async fillBuffer(responseData) {
         let eventList = responseData.querySelectorAll('[timestamp]')
         let listOfEvents = []
 
@@ -220,6 +215,7 @@ class HaasBroker {
         eventList.forEach(element => {
             element.setAttribute("serialNumber", this.serialNumber)
             element.setAttribute("instanceId", this.instanceId)
+            element.setAttribute("brokerInstanceId", this.brokerInstanceId)
 
             //experimental add correct time
             let elements_timestamp = new Date(element.getAttribute('timestamp')).getTime()
@@ -229,14 +225,13 @@ class HaasBroker {
                 //clocks running too fast on the machine
                 let correctedTime = elements_timestamp - this.driftTime
                 element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
-                element.setAttribute("brokerInstanceId", this.brokerInstanceId)
+                
             }
 
             else {
                 //clocks running too slow on the machine
                 let correctedTime = elements_timestamp + this.driftTime
                 element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
-                element.setAttribute("brokerInstanceId", this.brokerInstanceId)
             }
             listOfEvents.push(element)
         })
@@ -249,14 +244,36 @@ class HaasBroker {
         })
 
         //before pushing in to the global event log
+        //we are converting the xml tag to json and
         //we are checking if the event is already present
         //we are pushing the element as strings for easier comparision
-        listOfEvents.forEach(element => {
-            if (_.includes(this.globalEventBuffer, XMLSerializer.serializeToString(element)) != true) {
-                this.globalEventBuffer.push(XMLSerializer.serializeToString(element))
+        listOfEvents.forEach(async element => {
+            const parser = new xml2js.Parser({explicitRoot :true})
+            let elementJSON = await parser.parseStringPromise(XMLSerializer.serializeToString(element))
+            //forming the object again
+            let rootKey = Object.keys(elementJSON)[0]
+            elementJSON = {
+                root : rootKey,
+                ...elementJSON[rootKey]['$'],
+                data:elementJSON[rootKey]['_']
+            }
+
+            elementJSON = JSON.stringify(elementJSON)
+            if (_.includes(this.globalEventBuffer, elementJSON) != true) {
+                this.globalEventBuffer.push(elementJSON)
             }
         })
 
+    }
+
+    async sendToQueue(){
+        //we are ready to push the message to the Queue / Database 
+        //get events from globalEventBuffer
+        let deltaEvents = this.globalEventBuffer.slice(this.offloadedElements)
+        deltaEvents.forEach(event=>{
+            console.log(event)
+        })
+        this.offloadedElements+=deltaEvents.length
     }
 
 
@@ -266,65 +283,12 @@ class HaasBroker {
             await this.initiateProbe()
             await this.initiateCurrent()
             await this.initiateSample()
-
-            //storing in the database
-            await this.sendToQueue(this.globalEventBuffer)
-            await timer(10)
+            await this.sendToQueue()
+            await timer(5)
         }
     }
-
-    /**
-     * @param {Array} eventList
-     */
-    async sendToQueue(eventList) {
-
-        try {
-            if (this.dbConnection === null) {
-                return
-            }
-            const collection = this.dbConnection.collection("EventQueue")
-            //offload the data to Message Queue here
-            let deltaEvents = eventList.slice(this.offloadedElements)
-            //convert delta element to json format
-            deltaEvents.forEach((deltaElement) => {
-                xml2js.parseString(deltaElement, (error, result) => {
-                    if (!error) {
-                        // filter events here !
-                        let filterEvents = ["eventlogentry", "program", "controllermode", "execution"]
-                        if (_.includes(filterEvents, Object.keys(result)[0])) {
-                            collection.insertOne(result, (error, response) => {
-                                if (error) {
-                                    this.dbConnection = null
-                                    throw error
-                                }
-                                else {
-                                    console.log("Written..")
-                                }
-                            })
-                        }
-                    }
-                })
-            })
-
-            this.offloadedElements += deltaEvents.length
-
-        }
-        catch (error) {
-            //error reached ...
-            throw error
-        }
-
-    }
-
-    async setupDatabase() {
-        const credentials = await getCredentials()
-        const connectionURL = `mongodb+srv://${credentials.username}:${credentials.password}@cluster0.a4crvvz.mongodb.net/?retryWrites=true&w=majority`
-        this.dbConnection = await new MongoClient(connectionURL).connect()
-        this.dbConnection = this.dbConnection.db("Events")
-    }
-
 }
 
-//let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
-let haasObject = new HaasBroker("192.168.1.155", "8082", "http")
+let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
+//let haasObject = new HaasBroker("192.168.1.155", "8082", "http")
 haasObject.run()
