@@ -1,0 +1,6 @@
+{
+    "machineList": [
+        {"ip_address" : "192.168.1.156" , "port_number" : 8082,"protocol" : "http"},
+        {"ip_address" : "192.168.1.153" , "port_number" : 8082,"protocol" : "http"}
+    ]
+}

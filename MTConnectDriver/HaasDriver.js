@@ -17,12 +17,18 @@ import { JSDOM } from "jsdom"
 import _ from "lodash"
 import XMLSerializer from "xmlserializer"
 import xml2js from "xml2js"
+import logger from './Helper/LogHelper.js'
+import { v4 as uuid } from 'uuid'
+import fs from 'fs'
+import { MongoClient, ServerApiVersion } from 'mongodb'
+import getCredentials from "./Helper/secretProvider.js"
 
 class HaasBroker {
     constructor(ip_address, port_number, protocol) {
         this.ip_address = ip_address
         this.port_number = port_number
         this.protocol = protocol
+        this.driverCompatibilityCode = "DRIVEID_ANT1996"
 
         //helper switches
         this.nextRequest = "probe"
@@ -30,6 +36,13 @@ class HaasBroker {
         this.globalEventBuffer = []
         this.brokerInstanceId = null
 
+    }
+
+    //one time function this will probably change if we shift to the RabbitMQ
+    async setupDatabase() {
+        const credentials = await getCredentials()
+        const mongoURI = `mongodb+srv://${credentials.username}:${credentials.password}@cluster0.a4crvvz.mongodb.net/?retryWrites=true&w=majority`
+        this.globalDataExportPipelineReference = await new MongoClient(mongoURI).connect()
     }
 
     async initiateProbe() {
@@ -50,7 +63,7 @@ class HaasBroker {
         this.brokerInstanceId = null
 
         //set broker instanceID
-        this.brokerInstanceId = new Date().getTime()
+        this.brokerInstanceId = uuid()
 
         let probe_url = `${this.protocol}://${this.ip_address}:${this.port_number}/${this.nextRequest}`
 
@@ -79,10 +92,10 @@ class HaasBroker {
         }
         catch (error) {
             if (error instanceof AxiosError) {
-                console.log(`General Axios Error Reached ${error.message}`)
+                logger.error(`Axios Error Reached ${error}`)
             }
             else {
-                console.log(`Unknown Error ${error}`)
+                logger.error(`Unknown Error Reached ${error}`)
             }
             //reset to probe.
             this.nextRequest = 'probe'
@@ -128,10 +141,10 @@ class HaasBroker {
 
         catch (error) {
             if (error instanceof AxiosError) {
-                console.log(`General Axios Error Reached ${error.message}`)
+                logger.error(`Axios Error Reached ${error}`)
             }
             else {
-                console.log(`Unknown Error ${error}`)
+                logger.error(`Unknown Error Reached ${error}`)
             }
 
             //reset to probe.
@@ -191,10 +204,10 @@ class HaasBroker {
 
         catch (error) {
             if (error instanceof AxiosError) {
-                console.log(`General Axios Error Reached ${error.message}`)
+                logger.error(`Axios Error Reached ${error}`)
             }
             else {
-                console.log(`Unknown Error ${error}`)
+                logger.error(`Unknown Error Reached ${error}`)
             }
 
             //reset to probe.
@@ -216,6 +229,7 @@ class HaasBroker {
             element.setAttribute("serialNumber", this.serialNumber)
             element.setAttribute("instanceId", this.instanceId)
             element.setAttribute("brokerInstanceId", this.brokerInstanceId)
+            element.setAttribute("driverCompatibilityCode", this.driverCompatibilityCode)
 
             //experimental add correct time
             let elements_timestamp = new Date(element.getAttribute('timestamp')).getTime()
@@ -225,7 +239,7 @@ class HaasBroker {
                 //clocks running too fast on the machine
                 let correctedTime = elements_timestamp - this.driftTime
                 element.setAttribute("localTime", new Date(correctedTime).toLocaleString())
-                
+
             }
 
             else {
@@ -248,14 +262,14 @@ class HaasBroker {
         //we are checking if the event is already present
         //we are pushing the element as strings for easier comparision
         listOfEvents.forEach(async element => {
-            const parser = new xml2js.Parser({explicitRoot :true})
+            const parser = new xml2js.Parser({ explicitRoot: true })
             let elementJSON = await parser.parseStringPromise(XMLSerializer.serializeToString(element))
             //forming the object again
             let rootKey = Object.keys(elementJSON)[0]
             elementJSON = {
-                root : rootKey,
+                root: rootKey,
                 ...elementJSON[rootKey]['$'],
-                data:elementJSON[rootKey]['_']
+                data: elementJSON[rootKey]['_']
             }
 
             elementJSON = JSON.stringify(elementJSON)
@@ -266,29 +280,61 @@ class HaasBroker {
 
     }
 
-    async sendToQueue(){
+    async sendToQueue() {
         //we are ready to push the message to the Queue / Database 
         //get events from globalEventBuffer
         let deltaEvents = this.globalEventBuffer.slice(this.offloadedElements)
-        deltaEvents.forEach(event=>{
-            console.log(event)
-        })
-        this.offloadedElements+=deltaEvents.length
+
+        //convert back to object and feed in same array
+        for(let counter = 0 ; counter < deltaEvents.length ; counter++){
+            deltaEvents[counter] = JSON.parse(deltaEvents[counter])
+        }
+
+        //bulk insert !
+        if(deltaEvents.length > 0){
+            const collection = this.globalDataExportPipelineReference.db("EventLogs").collection(this.serialNumber)
+            collection.insertMany(deltaEvents).then((result)=>{
+                if(result.acknowledged){
+                    this.offloadedElements += deltaEvents.length
+                    logger.info(`Serial Number : ${this.serialNumber} ${result.acknowledged} - ${deltaEvents.length} processed`)
+                }
+            })
+        }
     }
 
 
     async run() {
+        //Wire the database connecting , and set a global reference for use
+        await this.setupDatabase()
         const timer = seconds => new Promise(res => setTimeout(res, seconds * 1000))
-        while (true) {
-            await this.initiateProbe()
-            await this.initiateCurrent()
-            await this.initiateSample()
-            await this.sendToQueue()
-            await timer(5)
+        try {
+            while (true) {
+                await this.initiateProbe()
+                await this.initiateCurrent()
+                await this.initiateSample()
+                await this.sendToQueue()
+                await timer(5)
+            }
+        }
+        catch (error) {
+            //handle general error..
+            logger.error(`Unknown Error Reached ${error}`)
         }
     }
 }
 
-let haasObject = new HaasBroker("mtconnect.mazakcorp.com", "5611", "http")
-//let haasObject = new HaasBroker("192.168.1.155", "8082", "http")
-haasObject.run()
+//open the file
+//load the contents of the machine data , and start connecting..
+
+fs.readFile('./ApplicationConfig.json', (error, data) => {
+    if (error) {
+        logger.error(`ApplicationConfig cannot be read ${error}`)
+    }
+    else {
+        const machineList = JSON.parse(data)["machineList"]
+        for (let machine of machineList) {
+            let haasBroker = new HaasBroker(machine.ip_address, machine.port_number, machine.protocol)
+            haasBroker.run()
+        }
+    }
+})
