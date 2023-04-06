@@ -22,6 +22,7 @@ import { v4 as uuid } from 'uuid'
 import fs from 'fs'
 import { MongoClient, ServerApiVersion } from 'mongodb'
 import getCredentials from "./Helper/secretProvider.js"
+import filterManager from "./Helper/FilterManager.js"
 
 class HaasBroker {
     constructor(ip_address, port_number, protocol) {
@@ -250,6 +251,9 @@ class HaasBroker {
             listOfEvents.push(element)
         })
 
+        //filtermanger in place
+        listOfEvents = filterManager(listOfEvents)
+
         //sorting in ascending order
         listOfEvents.sort((a, b) => {
             let a_timestamp = new Date(a.getAttribute('timestamp')).getTime()
@@ -271,6 +275,14 @@ class HaasBroker {
                 ...elementJSON[rootKey]['$'],
                 data: elementJSON[rootKey]['_']
             }
+
+            //weeding out the useless attributes
+            delete elementJSON['xmlns']
+            delete elementJSON['id']
+            delete elementJSON['dataitemid']
+            delete elementJSON['sequence']
+            delete elementJSON['name']
+            
 
             elementJSON = JSON.stringify(elementJSON)
             if (_.includes(this.globalEventBuffer, elementJSON) != true) {
