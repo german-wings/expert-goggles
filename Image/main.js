@@ -16,6 +16,12 @@ const BASE_URL = "http://mtconnect.mazakcorp.com:5610"
 const ENDPOINT_SERIAL_NUMBER = ""
 
 
+//some global variables to use in the script
+const globalCurrentState = null
+var globalClassifiedElements = {}
+var nextState = null
+
+
 async function getXMLResponse(request){
     const response = await axios(request)
     if(response.status !== 200){
@@ -57,8 +63,29 @@ async function probeRequest(){
             classifiedElements[`${element}`].push(selectedElement.getAttribute('id'))    
         }
 
+        globalClassifiedElements = classifiedElements
     }
-
-    console.log(classifiedElements)
 }
+
+async function currentRequest(){
+    const currentRequest = {
+        method : 'get' , url : `${BASE_URL}/current`
+    }
+    const currentResponse = await getXMLResponse(currentRequest)
+    globalCurrentState = currentResponse
+}
+
+async function sampleRequest(nextSequence){
+    const sampleRequest = {
+        method : 'get' , url : `${BASE_URL}/sample?from=${nextSequence}`
+    }
+    const sampleResponse = await getXMLResponse(sampleRequest)
+
+    //check if the sample response contains some error ? 
+    //if it contains OUT_OF_RANGE error -> reset the state of the script
+    
+}
+
 probeRequest()
+currentRequest()
+sampleRequest()
