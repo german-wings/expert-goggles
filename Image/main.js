@@ -32,23 +32,33 @@ async function getXMLResponse(request){
 
 }
 
-async function main(){
-
-
+async function probeRequest(){
     const probeRequest = {
         method : 'get' , url : `${BASE_URL}/probe`
     }
-
     const probeResponse = await getXMLResponse(probeRequest)
-
+    
+    //get all the categories , to build a object of elements based on categories
     const allCategoryElements = probeResponse.querySelectorAll('[category]')
-    const attributeNames = new Set()
+    const elements = new Set()
     for(let element of allCategoryElements){
-        attributeNames.add(element.getAttribute("category"))
+        elements.add(element.getAttribute("category"))
     }
 
-    console.log(attributeNames)
+    //start collecting all the elements based on their categories
+    const classifiedElements = {}
+    for(let element of elements){
+        const allSelectedElements = probeResponse.querySelectorAll(`[category=${element}]`)
 
+        classifiedElements[`${element}`] = []
+
+        //we are collecting the ids, for using later to update dom
+        for(let selectedElement of allSelectedElements){
+            classifiedElements[`${element}`].push(selectedElement.getAttribute('id'))    
+        }
+
+    }
+
+    console.log(classifiedElements)
 }
-
-main()
+probeRequest()
