@@ -19,7 +19,7 @@ const ENDPOINT_SERIAL_NUMBER = ""
 //some global variables to use in the script
 const globalCurrentState = null
 var globalClassifiedElements = {}
-var nextState = null
+var nextState = 'probe'
 
 
 async function getXMLResponse(request){
@@ -84,6 +84,17 @@ async function sampleRequest(nextSequence){
     //check if the sample response contains some error ? 
     //if it contains OUT_OF_RANGE error -> reset the state of the script
     
+
+    //start with the DOM Manipulation
+    
+    //helper code below will remove in production
+    const changeIds = []
+    for(let keys in globalClassifiedElements){
+        for(let element of globalClassifiedElements[`${keys}`]){
+            changeIds.push(element)
+        }
+    }
+
 }
 
 probeRequest()
