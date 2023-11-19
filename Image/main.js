@@ -14,6 +14,7 @@ const JSDOM = require('jsdom')
 const ENDPOINT_MAC = ""
 const BASE_URL = "https://smstestbed.nist.gov/vds/GFAgie01"
 const ENDPOINT_SERIAL_NUMBER = ""
+const POLL_INTERVAL = 50
 
 
 //some global variables to use in the script
@@ -21,6 +22,13 @@ var globalNextRequestType = 'probe'
 var globalClassifiedElements = {}
 var globalNextSequence = null
 var globalMachineState = null
+
+
+function resetState() {
+    globalNextRequestType = 'probe'
+    globalNextSequence = null
+    globalMachineState = null
+}
 
 
 async function getXMLResponse(request) {
@@ -40,6 +48,10 @@ async function getXMLResponse(request) {
 }
 
 async function probeRequest() {
+
+    //reset the state
+    resetState()
+
     const probeRequest = {
         method: 'get', url: `${BASE_URL}/probe`
     }
@@ -82,7 +94,7 @@ async function currentRequest() {
     //we will update the globalSequenceNo.
     let headerElement = currentResponse.querySelector('Header')
     let nextSequence = headerElement.getAttribute('nextSequence')
-    
+
     globalNextSequence = nextSequence
 
     //set the nextState to sample
@@ -96,10 +108,11 @@ async function sampleRequest(nextSequence) {
     }
     const sampleResponse = await getXMLResponse(sampleRequest)
 
+
     //check if the sample response contains some error ? 
     //if it contains OUT_OF_RANGE error -> reset the state of the script
     let errorElements = sampleResponse.querySelectorAll(`[errorCode]`)
-    if (errorElements !== null) {
+    if (errorElements.length != 0) {
         //errors present lets handle
         for (let errorElement of errorElements) {
             let errorCode = errorElement.getAttribute('errorCode')
@@ -110,7 +123,6 @@ async function sampleRequest(nextSequence) {
                 default:
                     throw Error("Fatal Error.")
                     break
-
             }
         }
     }
@@ -127,11 +139,12 @@ async function sampleRequest(nextSequence) {
         //start with the DOM Manipulation
         //start with the header
         let originalHeader = globalMachineState.querySelector('Header')
-        originalHeader.parentNode.replaceChild(sampleResponse.querySelector('Header'),originalHeader)
+        let changeHeader = sampleResponse.querySelector('Header').cloneNode(true)
+        originalHeader.parentNode.replaceChild(changeHeader, originalHeader)
 
         //begin modifying the body
         for (let canChangeId of changeIds) {
-            let changeNode = sampleResponse.querySelector(`[dataItemId=${canChangeId}]`)
+            let changeNode = sampleResponse.querySelector(`[dataItemId=${canChangeId}]`) ? sampleResponse.querySelector(`[dataItemId=${canChangeId}]`).cloneNode(true) : null
             if (changeNode !== null) {
                 let originalNode = globalMachineState.querySelector(`[dataItemId=${canChangeId}]`)
 
@@ -154,16 +167,13 @@ async function sampleRequest(nextSequence) {
 
         //set the nextState to 'sample'
         globalNextRequestType = 'sample'
+
     }
 
 }
 
 
 async function main() {
-
-
-    //debug
-    let oldMachineState =globalMachineState?(new (globalMachineState.defaultView).XMLSerializer()).serializeToString(globalMachineState):"NULL"
 
     while (true) {
         switch (globalNextRequestType) {
@@ -179,15 +189,8 @@ async function main() {
             default:
                 break
         }
-        
 
-        let newMachineState =globalMachineState?(new (globalMachineState.defaultView).XMLSerializer()).serializeToString(globalMachineState):"NULL"
-        if(oldMachineState !== newMachineState){
-            console.log("Changed !!!!!!!!")
-            console.log(newMachineState.toString().slice(0,500))
-        }
-
-        await new Promise((resolve, reject) => setTimeout(resolve, 1000))
+        await new Promise((resolve, reject) => setTimeout(resolve, POLL_INTERVAL))
     }
 }
 
